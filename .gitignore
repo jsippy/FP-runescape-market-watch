@@ -26,3 +26,7 @@ yarn-error.log*
 .cache
 
 dist
+
+# Heavy files
+/scrapper/item_prices.json
+
