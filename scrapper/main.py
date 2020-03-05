@@ -6,49 +6,12 @@ from urllib.request import Request, urlopen
 
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
 BASE_URL = 'https://oldschool.runescape.wiki/w/Module:Exchange/{}'
-SUMMARY_URL = 'https://rsbuddy.com/exchange/summary.json'
+SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-complete.json'
 ITEMS = './better_items.json'
 PRICE_FILE_DEST = './item_prices.json'
 
 # Dictionary of item names to a corrected version
 ITEM_NAME_CORRECTIONS = {}
-
-def getMetaData(item_name):
-  item_url = BASE_URL.format(item_name)
-  req = Request(item_url, headers={ 'User-Agent': USER_AGENT })
-  try:
-    res = urlopen(req)
-  except:
-    print('FAILED!')
-  
-  soup = BeautifulSoup(res.read(), 'html.parser')
-  pre = soup.find('pre')
-  # remove 'return' keyword from front, split on newlines, remove brackets
-  json_text = pre.text[7:].split('\n')[1:-1]
-  for line in json_text:
-    parts = line.split('=')
-    key = parts[0].strip()
-    val = parts[1].strip()
-    # remove trailing commas....
-    if (val[-1] == ','):
-      val = val[:-1]
-    
-    # remove quotes if string...
-    if (val[0] == '\''):
-      val = val[1:-1]
-    
-    # booleans...
-    if (val == 'true'):
-      val = True
-    print(val)
-
-  #json_text = pre.text[7:]
-  print(json_text)
-
-  #blob = json.loads(pre.text)
-  #print(blob)
-  return None
-
     
 def updateItemMetadata():
   req = Request( SUMMARY_URL, headers={ 'User-Agent': USER_AGENT })
@@ -61,15 +24,37 @@ def updateItemMetadata():
   except:
     print('FAILED!')
     
+  
   for id in blob:
     item = blob[id]
-    name = item['name'].replace(' ', '_')
-    # if not in db already...
-    #   add to list of items to be fetched
-    items_to_update.append(name)
+    print(item)
 
-  for item_name in items_to_update:
-    metadata = getMetaData(item_name)
+    id = item['id']
+    name = item['name']
+    members = item['members']
+    tradeable_on_ge = item['tradeable_on_ge']
+    noteable = item['noteable']
+    examine = item['examine']
+    icon = item['icon']
+    buy_limit = item['buy_limit']
+    store_price = item['cost']
+    high_alch = item['highalch']
+    wiki_url = item['wiki_url']
+
+    if wiki_url == None:
+      wiki_name = name.replace(' ', '_')
+    else:
+      wiki_name = wiki_url.split('/')[-1]
+
+    if tradeable_on_ge:
+      # if not in db already...
+      # ADD TO OUR DB
+      # cur = conn.cursor()
+      # insert_query = "INSERT INTO metadata VALUES {}".format("(10, 'hello@dataquest.io', 'Some Name', '123 Fake St.')")
+      # cur.execute(insert_query)
+
+      items_to_update.append(name)
+
 
 
 def main():
