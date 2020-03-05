@@ -21,6 +21,7 @@ def main():
   # Build dict of price history
   price_history = {}
   failed_items = []
+  for i, item_name in enumerate(data):
     if item_name in ITEM_NAME_CORRECTIONS:
       item_name = ITEM_NAME_CORRECTIONS[item_name]
     print('Loading ({:04d}/{:4d}): {:.<30s}'.format(i, len(data), item_name), end='')
@@ -48,16 +49,16 @@ def main():
     prices = []
     for span in spans:
       prices.append(span.text.strip('\''))
-      # split = span.text.strip('\'').split(':')
-      # if len(split) == 2:
-      #   time, price = split
-      #   vol = None
-      # elif len(split) == 3:
-      #   time, price, vol = split
-      # else:
-      #   assert False, 'Something is wrong with this line {}'.format(span.text)
-      # date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
-      # print('{}: price: {} vol: {}'.format(date, price, vol))
+      split = span.text.strip('\'').split(':')
+      if len(split) == 2:
+        time, price = split
+        vol = None
+      elif len(split) == 3:
+        time, price, vol = split
+      else:
+        assert False, 'Something is wrong with this line {}'.format(span.text)
+      date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
+      print('{}: price: {} vol: {}'.format(date, price, vol))
       price_history[id] = prices
 
   # Write price history to file
