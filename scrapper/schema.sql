@@ -1,3 +1,7 @@
+-- metadata should have a REFERENCE to the MOST RECENT price_history item associated with it
+-- (or a fast way to get to it, because we need current price/volume to display in table)
+
+
 create table metadata (
   item_id int primary key,
   name text unique not null,
