@@ -14,6 +14,9 @@ PRICE_FILE_DEST = './item_prices.json'
 # Dictionary of item names to a corrected version
 ITEM_NAME_CORRECTIONS = {}
 
+def updateItemPriceData():
+
+
 def updateItemMetadata():
     req = Request(SUMMARY_URL, headers={'User-Agent': USER_AGENT})
     print('Fetching item metadata...')
@@ -24,15 +27,9 @@ def updateItemMetadata():
     except:
         print('FAILED!')
 
-    conn = psycopg2.connect(
-      host="localhost",
-      database="market_watch",
-      user="osrs",
-      password="runescape"
-    )
 
     cur = conn.cursor()
-    conn.autocommit = True
+
 
 
     for id in blob:
@@ -70,7 +67,6 @@ def updateItemMetadata():
 
             cur.execute(insert_query)
 
-    conn.close()
     cur.close()
 
 def metadata_exists(cursor, name):  
@@ -87,7 +83,16 @@ def psqlEscapeStr(str):
 
 
 def main():
-    updateItemMetadata()
+    conn = psycopg2.connect(
+      host="localhost",
+      database="market_watch",
+      user="osrs",
+      password="runescape"
+    )
+    conn.autocommit = True
+    updateItemMetadata(conn)
+    conn.close()
+
     # Get all items
     # with open(ITEMS, 'r') as items_file:
     #   data = json.load(items_file)
