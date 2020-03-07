@@ -34,8 +34,7 @@ def updateItemMetadata():
     cur = conn.cursor()
     conn.autocommit = True
 
-    # seen is cheap hack to ignore items with same name (i.e Priest gown)
-    seen = []
+
     for id in blob:
         item = blob[id]
         id = item['id']
@@ -59,22 +58,8 @@ def updateItemMetadata():
         else:
             wiki_name = psqlEscapeStr(wiki_url.split('/')[-1])
 
-        # row = ( int(id), name, examine, icon, wiki_name, wiki_url, members,
-        #         tradeable_on_ge, noteable, int(high_alch), int(store_price),
-        #         int(buy_limit)
-        # )
-        # insert_query = """ INSERT INTO metadata(item_id, name, examine, icon,
-        #             wiki_name, wiki_url, members, tradeable_on_ge,
-        #             noteable, high_alch, store_price, buy_limit) 
-        #             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
-        # print(id, name, examine, icon, wiki_name, wiki_url, members,
-        #     tradeable_on_ge, noteable, high_alch, store_price, buy_limit)
-        #     cur.execute(insert_query, row)
-
-        # cheap hack to avoid duplicate names...
-        if tradeable_on_ge and name not in seen:
-
-            seen.append(name)
+        if tradeable_on_ge and not metadata_exists(cur, name):
+            print("Adding {} to metadata table".format(name))
             insert_query = """ INSERT INTO metadata(item_id, name, examine, icon,
                                 wiki_name, wiki_url, members, tradeable_on_ge,
                                 noteable, high_alch, store_price, buy_limit) 
@@ -83,13 +68,16 @@ def updateItemMetadata():
                 id, name, examine, icon, wiki_name, wiki_url, members, tradeable_on_ge, noteable, high_alch, store_price, buy_limit
             )
 
-            print(insert_query)
-
             cur.execute(insert_query)
 
     conn.close()
     cur.close()
 
+def metadata_exists(cursor, name):  
+    sql = "select * from metadata where name = '{}'".format(name)
+    cursor.execute(sql)
+    result = cursor.fetchone()
+    return result != None
 
 def psqlEscapeStr(str):
     if str == None:
