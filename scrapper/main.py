@@ -1,5 +1,6 @@
 import json
 import psycopg2
+from psycopg2.extras import execute_values
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.request import Request, urlopen
@@ -14,8 +15,60 @@ PRICE_FILE_DEST = './item_prices.json'
 # Dictionary of item names to a corrected version
 ITEM_NAME_CORRECTIONS = {}
 
-def updateItemPriceData():
-    pass
+def updateItemPriceData(conn):
+    failed_items = []
+    price_history = {}
+    cur = conn.cursor()
+    cur.execute("SELECT wiki_name, item_id FROM metadata")
+    results = cur.fetchall()
+    for res in results:
+        name, id = res
+        print(name, id)
+        #item_name = ITEM_NAME_CORRECTIONS[item_name]
+        #print('Loading ({:04d}/{:4d}): {:.<30s}'.format(i, len(data), item_name), end='')
+        item_url = BASE_URL.format(name) + '/Data'
+        req = Request( item_url, headers={ 'User-Agent': USER_AGENT })
+        try:
+            res = urlopen(req)
+        except:
+            print('FAILED!')
+            failed_items.append(name)
+            continue
+
+        if res.status != 200:
+            print('FAILED!')
+            failed_items.append(name)
+            continue
+        # print('Failed to get item! id: {} name: {}'.format(id, item_name))
+        # print(res.__dict__)
+        # exit()
+        else:
+            print('Success!')
+
+        soup = BeautifulSoup(res.read(), 'html.parser')
+        spans = soup('span', {'class': 's1'})
+        prices = []
+
+        rows_to_insert = []
+        for span in spans:
+            prices.append(span.text.strip('\''))
+            split = span.text.strip('\'').split(':')
+            if len(split) == 2:
+                time, price = split
+                vol = None
+            elif len(split) == 3:
+                time, price, vol = split
+            else:
+                assert False, 'Something is wrong with this line {}'.format(span.text)
+            date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
+            row = (id, date, price, vol)
+            rows_to_insert.append(row)
+            price_history[id] = prices
+
+        execute_values(cur, "INSERT INTO price_history (item_id, ts, price, volume) VALUES %s  ON CONFLICT DO NOTHING", rows_to_insert)
+    
+    cur.close()
+    
 
 def updateItemMetadata(conn):
     req = Request(SUMMARY_URL, headers={'User-Agent': USER_AGENT})
@@ -89,59 +142,8 @@ def main():
     )
     conn.autocommit = True
     updateItemMetadata(conn)
+    updateItemPriceData(conn)
     conn.close()
-
-    # Get all items
-    # with open(ITEMS, 'r') as items_file:
-    #   data = json.load(items_file)
-
-    # # Build dict of price history
-    # price_history = {}
-    # failed_items = []
-    # for i, item_name in enumerate(data):
-    #   item_name = data[item_name]['name']
-    #   #item_name = ITEM_NAME_CORRECTIONS[item_name]
-    #   print('Loading ({:04d}/{:4d}): {:.<30s}'.format(i, len(data), item_name), end='')
-    #   item_url = BASE_URL.format(item_name) + '/Data'
-    #   req = Request( item_url, headers={ 'User-Agent': USER_AGENT })
-    #   try:
-    #     res = urlopen(req)
-    #   except:
-    #     print('FAILED!')
-    #     failed_items.append(item_name)
-    #     continue
-
-    #   if res.status != 200:
-    #     print('FAILED!')
-    #     failed_items.append(item_name)
-    #     continue
-    #     # print('Failed to get item! id: {} name: {}'.format(id, item_name))
-    #     # print(res.__dict__)
-    #     # exit()
-    #   else:
-    #     print('Success!')
-
-    #   soup = BeautifulSoup(res.read(), 'html.parser')
-    #   spans = soup('span', {'class': 's1'})
-    #   prices = []
-    #   for span in spans:
-    #     prices.append(span.text.strip('\''))
-    #     split = span.text.strip('\'').split(':')
-    #     if len(split) == 2:
-    #       time, price = split
-    #       vol = None
-    #     elif len(split) == 3:
-    #       time, price, vol = split
-    #     else:
-    #       assert False, 'Something is wrong with this line {}'.format(span.text)
-    #     date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
-    #     print('{}: price: {} vol: {}'.format(date, price, vol))
-    #     price_history[id] = prices
-
-    # # Write price history to file
-    # with open(PRICE_FILE_DEST, 'w') as price_file:
-    #   json.dump(price_history, price_file)
-
 
 if __name__ == '__main__':
     main()
