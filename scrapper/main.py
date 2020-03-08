@@ -1,10 +1,10 @@
 import json
+import time
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.request import Request, urlopen
-
 
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
 BASE_URL = 'https://oldschool.runescape.wiki/w/Module:Exchange/{}'
@@ -19,35 +19,38 @@ def updateItemPriceData(conn):
     failed_items = []
     price_history = {}
     cur = conn.cursor()
-    cur.execute("SELECT wiki_name, item_id FROM metadata")
+    cur.execute("SELECT name, item_id FROM metadata")
     results = cur.fetchall()
     for res in results:
         name, id = res
-        print(name, id)
+        print('{} | {}... '.format(id, name), end=' ')
+        name = name.replace(' ', '_')
         #item_name = ITEM_NAME_CORRECTIONS[item_name]
         #print('Loading ({:04d}/{:4d}): {:.<30s}'.format(i, len(data), item_name), end='')
         item_url = BASE_URL.format(name) + '/Data'
+        print(item_url)
         req = Request( item_url, headers={ 'User-Agent': USER_AGENT })
         try:
             res = urlopen(req)
         except:
             print('FAILED!')
             failed_items.append(name)
+            res.close()
             continue
 
         if res.status != 200:
             print('FAILED!')
             failed_items.append(name)
             continue
-        # print('Failed to get item! id: {} name: {}'.format(id, item_name))
-        # print(res.__dict__)
-        # exit()
+
         else:
             print('Success!')
 
+        print('before read')
         soup = BeautifulSoup(res.read(), 'html.parser')
         spans = soup('span', {'class': 's1'})
         prices = []
+        print('after read')
 
         rows_to_insert = []
         for span in spans:
@@ -59,14 +62,16 @@ def updateItemPriceData(conn):
             elif len(split) == 3:
                 time, price, vol = split
             else:
-                assert False, 'Something is wrong with this line {}'.format(span.text)
+                print('Something is wrong with this line {}'.format(span.text))
+                rows_to_insert = []
+                break
+            date = None
             date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
             row = (id, date, price, vol)
             rows_to_insert.append(row)
             price_history[id] = prices
 
-        execute_values(cur, "INSERT INTO price_history (item_id, ts, price, volume) VALUES %s  ON CONFLICT DO NOTHING", rows_to_insert)
-    
+        execute_values(cur, "INSERT INTO price_history (item_id, ts, price, volume) VALUES %s ON CONFLICT DO NOTHING", rows_to_insert)
     cur.close()
     
 
