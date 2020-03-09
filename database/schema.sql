@@ -4,7 +4,7 @@
 
 create table metadata (
   item_id int primary key,
-  name text unique not null,
+  name text not null,
   examine text,
   icon text,
   wiki_name text,
