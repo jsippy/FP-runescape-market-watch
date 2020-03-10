@@ -9,13 +9,12 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError
 from multiprocessing import Pool
 
-USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 ' \
+             '(KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
 PRICES_URL = 'https://oldschool.runescape.wiki/w/Module:Exchange/{}/Data'
 SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-complete.json'
-ITEMS = './better_items.json'
-PRICE_FILE_DEST = './item_prices.json'
-PG_USER = 'jsippy'
-PG_PASS = ''
+PG_USER = 'osrs'
+PG_PASS = 'runescape'
 
 # Dictionary of ids to corrected version of name
 ITEM_NAME_CORRECTIONS = {
@@ -33,7 +32,14 @@ def updateItemPriceData(conn):
     name_id_pairs = cur.fetchall()
 
     pool = Pool(8)
-    list(tqdm.tqdm(pool.imap_unordered(scrapeURL, name_id_pairs), total=len(name_id_pairs)))
+    scraper_results = tqdm.tqdm(pool.imap_unordered(scrapeURL, name_id_pairs), 
+                        total=len(name_id_pairs))
+    for rows in scraper_results:
+        if len(rows) == 0: continue
+        b_rows = [cur.mogrify("(%s,%s,%s,%s)", row) for row in rows]
+        args_str = b",".join(b_rows)
+        cur.execute(b"INSERT INTO price_history VALUES " +
+                args_str + b" ON CONFLICT (item_id, ts) DO NOTHING") 
     pool.close()
     cur.close()
     
@@ -45,18 +51,19 @@ def scrapeURL(args):
     name = name.replace(' ', '_')
     url = PRICES_URL.format(name)
 
+    # DEBUG
     # print('{: 6d} | {: <30} |'.format(item_id, name), end=' ')
     request = Request(url, headers={ 'User-Agent': USER_AGENT })
     try: response = urlopen(request)
     except URLError as e:
         if hasattr(e, 'reason'):
             print('Failed to reach a server: {}'.format(e.reason))
+            print('Item id: {} | Name: {}'.format(item_id, name))
         elif hasattr(e, 'code'):
             print('The server couldn\'t fulfill the request: {}'.format(e.code))
         return []
     
-    # print('Success!')
-
+    # No exception
     soup = BeautifulSoup(response.read(), 'html.parser')
     spans = soup('span', {'class': 's1'})
     prices = []
@@ -76,7 +83,7 @@ def scrapeURL(args):
             break
         
         date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
-        result.append((item_id, date, price, vol))
+        result.append((str(item_id), date, price, vol))
     return result
 
 
@@ -109,15 +116,6 @@ def updateItemMetadata(conn):
         if buy_limit == None:
             buy_limit = -1          # -1 to signify no buy limit
 
-        # if tradeable_on_ge:
-        #   if id == None:
-        #     print('id is none')
-        #   if name == None:
-        #     print('id is none')
-        #   if wiki_name == None:
-        #     print('id is none')
-        #   print('{: 5} | {: <20} | {: <20}'.format(id, name, wiki_name))
-
         if wiki_url is None:
             wiki_url = "https://oldschool.runescape.wiki/w/" + name.replace(' ', '_')
 
@@ -131,10 +129,17 @@ def updateItemMetadata(conn):
                 id, name, examine, icon, wiki_url, members, tradeable_on_ge, noteable, high_alch, store_price, buy_limit
             )
             cur.execute(insert_query)
+    print('Finished updating metadata...')
     cur.close()
 
 def metadata_exists(cursor, item_id):  
     sql = "select * from metadata where item_id = {}".format(item_id)
+    cursor.execute(sql)
+    result = cursor.fetchone()
+    return result != None
+
+def price_history_exists(cursor, item_id, ts):  
+    sql = "select * from price_history where item_id = {}".format(item_id)
     cursor.execute(sql)
     result = cursor.fetchone()
     return result != None
