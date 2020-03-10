@@ -62,7 +62,7 @@ def api_metadata():
                (
                    SELECT item_id, MAX(ts) max_ts
                    FROM price_history
-		   WHERE volume IS NOT NULL
+		   WHERE price IS NOT NULL AND volume IS NOT NULL
                    GROUP BY item_id
                ) c ON p.item_id = c.item_id AND p.ts = c.max_ts
 	       '''
