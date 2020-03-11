@@ -6,4 +6,4 @@ An interactive dashboard for visualizing Oldschool RuneScape market data.
 
 ## TODO
 
-[ ] Fix crosshair/legends to use transformed scale
+- [ ] Fix crosshair/legends to use transformed scale
