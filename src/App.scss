@@ -1,0 +1,218 @@
+@import "loading";
+@import url('https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap');
+
+$bg: #303030;
+$text: #222;
+$primary: #212121;
+$hover: #474444;
+
+td {
+  padding: 8px !important;
+}
+
+html {
+  background: $bg;
+  overflow: hidden;
+}
+
+.PriceTableRow {
+  &:hover {
+    background: $hover !important;
+  }
+
+  &.Selected {
+    background: $primary !important;
+  }
+}
+
+.Wrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.Container {
+  display: grid;
+  grid-template-columns: 400px auto;
+  height: 100%;
+
+  &.Expanded {
+    grid-template-columns: auto;
+  }
+
+  .Sidebar {
+    border-right: 1px solid #515151;
+    height: 100%;
+    display: grid;
+    grid-template-areas: "header"
+                         "search"
+                         "items"
+                         "footer";
+    grid-template-rows: auto auto 1fr auto;
+
+    .Header {
+      padding-left: 8px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+      grid-area: header;
+      display: flex;
+      background-color: #d66061;
+
+      .Logo {
+        text-align: center;
+        font-size: 18px;
+        margin-left: 12px;
+        padding-top: 4px;
+        color:  $bg;
+        border-radius: 6px;
+        font-family: 'Press Start 2P', cursive;
+      }
+    }
+
+    .Footer {
+      grid-area: footer;
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+
+      & > * {
+        flex-grow: 1;
+        text-align: center;
+        padding: 4px;
+        font-size: 16px;
+      }
+    }
+    .SearchBarContainer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 10px;
+      box-sizing: border-box;
+      grid-area: search;
+
+      .Searchbar {
+        height: 100%;
+
+      }  
+    }
+
+    .ItemsContainer {
+      grid-area: items;
+      overflow: hidden;
+    }
+
+    .SidebarItem {
+      display: flex;
+      flex-direction: row;
+      color: $text;
+      cursor: pointer;
+      
+      .SidebarItemImage {
+        width: 50px;
+      }
+
+      &.Active {
+        background: black;
+        color: white;
+      }
+    }
+  }
+  
+  .Content {
+    display: inline-flex;
+    flex-direction: column;
+    min-width: 100%;
+    overflow: hidden;
+
+    &.Expanded {
+      display: none;
+    }
+
+    .ChartContainer {
+      flex-basis: 0px;
+      flex-grow: 1;
+      max-height: 100%;
+      margin: 50px;
+
+
+
+      .ChartTitle {
+        display: flex;
+        flex-direction: row;
+        position: absolute;
+        top: 6px;
+        margin-left: 10px;
+      }
+
+      .Legend {
+        position: absolute;
+        margin: 10px 0px 0px 10px;
+        padding: 5px 10px 5px 10px;
+        background: $hover;
+        background: rgba(20,20,20, 0.5);;
+        border-radius: 6px;
+        min-width: 100px;
+
+        .Label {
+          color: rgba(255, 255, 255, 0.5);
+
+          &.Blue {
+            color: steelblue;
+          }
+
+          &.Orange {
+            color: goldenrod;
+          }
+
+          .Value {
+            color: white;
+          }
+        }
+
+        .LegendHeader {
+          display: flex;
+
+          .LegendIcon {
+            width: 40px;
+            height: 40px;
+          }
+
+
+          .ItemName {
+            font-size: 16px;
+            margin-top: 8px;
+          }
+        }
+      }
+    }
+
+    .ItemInfo {
+      display: grid;
+      grid-template-areas: "pic name"
+                           "pic stats";
+      grid-template-rows: auto 1fr;
+      grid-template-columns: auto 1fr;
+
+      
+      .LargeItemImage {
+        width: 250px;
+        height: 250px;
+        grid-area: pic;
+      }
+  
+      .LargeItemName {
+        font-size: 26px;
+        grid-area: name;
+        color: $text;
+      }
+
+      .Statistics {
+        grid-area: stats;
+        font-size: 18px;
+        color: $text;
+
+      }
+    }
+
+     
+  }
+}
+
