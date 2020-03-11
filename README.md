@@ -11,4 +11,4 @@ An interactive dashboard for visualizing Oldschool RuneScape market data.
 - [ ] RSI / STOCH RSI chart
 - [ ] Re-implement % change or include Hi alch, store price
 - [ ] Homepage view
-- [ ] Resolve price history for all ge tradable items
+- [x] Resolve price history for all ge tradable items
