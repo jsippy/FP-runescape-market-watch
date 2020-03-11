@@ -1,6 +1,6 @@
 import json
 import time
-import tqdm
+from tqdm import tqdm
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime
@@ -13,28 +13,37 @@ USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 ' \
              '(KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
 PRICES_URL = 'https://oldschool.runescape.wiki/w/Module:Exchange/{}/Data'
 SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-complete.json'
+WIKI_URL = 'https://oldschool.runescape.wiki/w/'
 PG_USER = 'osrs'
 PG_PASS = 'runescape'
+POOL_SIZE = 8
+
+HEAD = {'User-Agent': USER_AGENT }
 
 # Dictionary of ids to corrected version of name
 ITEM_NAME_CORRECTIONS = {
-  426: 'Priest gown (top)',
-  428: 'Priest gown (bottom)',
-  4529: 'Candle lantern (white)',
-  4532: 'Candle lantern (black)',
+    4529: 'Candle lantern (white)',
+    4532: 'Candle lantern (black)',
+
+    6215: 'Broodoo_shield_(10)_(green)',
+    6235: 'Broodoo_shield_(green)',
+
+    6237: 'Broodoo_shield_(10)_(orange)',
+    6257: 'Broodoo_shield_(orange)',
+
+    6259: 'Broodoo_shield_(10)_(blue)',
+    6279: 'Broodoo_shield_(blue)',
 }
 
 def updateItemPriceData(conn):
-    failed_items = []
-    price_history = {}
     cur = conn.cursor()
-    cur.execute("SELECT name, item_id FROM metadata")
+    cur.execute("SELECT name, wiki_name, item_id FROM metadata")
     name_id_pairs = cur.fetchall()
 
-    pool = Pool(8)
-    scraper_results = tqdm.tqdm(pool.imap_unordered(scrapeURL, name_id_pairs), 
-                        total=len(name_id_pairs))
-    for rows in scraper_results:
+    print('Fetching price history...')
+    pool = Pool(POOL_SIZE)
+    imap = pool.imap_unordered(scrapeURL, name_id_pairs)
+    for rows in tqdm(imap, total=len(name_id_pairs)):
         if len(rows) == 0: continue
         b_rows = [cur.mogrify("(%s,%s,%s,%s)", row) for row in rows]
         args_str = b",".join(b_rows)
@@ -45,31 +54,30 @@ def updateItemPriceData(conn):
     
 
 def scrapeURL(args):
-    name, item_id = args
+    name, wiki_name, item_id = args
+
     if item_id in ITEM_NAME_CORRECTIONS:
       name = ITEM_NAME_CORRECTIONS[item_id]
-    name = name.replace(' ', '_')
-    url = PRICES_URL.format(name)
 
-    # DEBUG
-    # print('{: 6d} | {: <30} |'.format(item_id, name), end=' ')
-    request = Request(url, headers={ 'User-Agent': USER_AGENT })
-    try: response = urlopen(request)
-    except URLError as e:
-        if hasattr(e, 'reason'):
-            print('Failed to reach a server: {}'.format(e.reason))
-            print('Item id: {} | Name: {}'.format(item_id, name))
-        elif hasattr(e, 'code'):
-            print('The server couldn\'t fulfill the request: {}'.format(e.code))
-        return []
+    name = name.replace(' ', '_')
+    wiki_name = wiki_name.replace(' ', '_')
+
+    try: 
+        request = Request(PRICES_URL.format(name), headers=HEAD)
+        response = urlopen(request)
+        loaded = True
+    except:
+        loaded = False 
     
-    # No exception
+    if not loaded:
+        request = Request(PRICES_URL.format(wiki_name), headers=HEAD)
+        try: response = urlopen(request)
+        except: return []
+
     soup = BeautifulSoup(response.read(), 'html.parser')
     spans = soup('span', {'class': 's1'})
-    prices = []
     result = []
     for span in spans:
-        prices.append(span.text.strip('\''))
         split = span.text.strip('\'').split(':')
         if len(split) == 2:
             time, price = split
@@ -79,8 +87,6 @@ def scrapeURL(args):
         else:
             print('Something is wrong with this line {}'.format(span.text))
             assert False
-            rows_to_insert = []
-            break
         
         date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
         result.append((str(item_id), date, price, vol))
@@ -88,52 +94,65 @@ def scrapeURL(args):
 
 
 def updateItemMetadata(conn):
-    req = Request(SUMMARY_URL, headers={'User-Agent': USER_AGENT})
     print('Fetching item metadata...')
 
     try:
-        res = urlopen(req)
-        blob = json.loads(res.read())
+        request = Request(SUMMARY_URL, headers={'User-Agent': USER_AGENT})
+        response = urlopen(request)
+        blob = json.loads(response.read())
+        response.close()
     except:
-        print('FAILED!')
+        assert False, 'Failed to recieve metadata file'
 
     cur = conn.cursor()
 
-    for id in blob:
-        item = blob[id]
-        id = item['id']
-        name = psqlEscapeStr(item['name'])
-        members = item['members']
-        tradeable_on_ge = item['tradeable_on_ge']
-        noteable = item['noteable']
-        examine = psqlEscapeStr(item['examine'])
-        icon = item['icon']
-        buy_limit = item['buy_limit']
-        store_price = item['cost']
-        high_alch = item['highalch']
-        wiki_url = psqlEscapeStr(item['wiki_url'])
+    for key in tqdm(blob, total=len(blob)):
+        item = blob[key]
+        if item['tradeable_on_ge']:
+            if item['buy_limit'] == None:
+                buy_limit = -1          # -1 to signify no buy limit
 
-        if buy_limit == None:
-            buy_limit = -1          # -1 to signify no buy limit
+            if item['wiki_name'] is None:
+                item['wiki_name'] = item['name'].replace(' ', '_')
+                item['wiki_url'] = WIKI_URL + item['wiki_name']
 
-        if wiki_url is None:
-            wiki_url = "https://oldschool.runescape.wiki/w/" + name.replace(' ', '_')
-
-        if tradeable_on_ge and not metadata_exists(cur, id):
-            print("Adding {} to metadata table".format(name))
-            insert_query = """ INSERT INTO metadata(item_id, name, examine, icon,
-                                wiki_url, members, tradeable_on_ge, noteable, 
-                                high_alch, store_price, buy_limit) VALUES 
-                                ({}, '{}', '{}', '{}', '{}', {}, {}, {}, 
-                                {}, {}, {})""".format(
-                id, name, examine, icon, wiki_url, members, tradeable_on_ge, noteable, high_alch, store_price, buy_limit
-            )
-            cur.execute(insert_query)
-    print('Finished updating metadata...')
+            if not metadata_exists(cur, item['id']):
+                insert_query = """INSERT INTO metadata
+                                  (
+                                    item_id, 
+                                    name, 
+                                    examine, 
+                                    icon,
+                                    wiki_name,
+                                    wiki_url, 
+                                    members, 
+                                    tradeable_on_ge, 
+                                    noteable, 
+                                    high_alch, 
+                                    store_price, 
+                                    buy_limit
+                                  ) 
+                                  VALUES 
+                                  (%s, %s, %s, %s, %s, %s,
+                                   %s, %s, %s, %s, %s, %s)"""
+                
+                cur.execute(insert_query, (
+                        item['id'],
+                        item['name'],
+                        item['examine'],
+                        item['icon'],
+                        item['wiki_name'],
+                        item['wiki_url'],
+                        item['members'],
+                        item['tradeable_on_ge'],
+                        item['noteable'],
+                        item['highalch'],
+                        item['cost'],
+                        item['buy_limit']))
     cur.close()
 
 def metadata_exists(cursor, item_id):  
-    sql = "select * from metadata where item_id = {}".format(item_id)
+    sql = "SELECT * FROM metadata WHERE item_id = {}".format(item_id)
     cursor.execute(sql)
     result = cursor.fetchone()
     return result != None
@@ -143,11 +162,6 @@ def price_history_exists(cursor, item_id, ts):
     cursor.execute(sql)
     result = cursor.fetchone()
     return result != None
-
-def psqlEscapeStr(str):
-    if str == None:
-        return None
-    return str.replace("'", "''")  # double single quotes to escape in psql
 
 def main():
     conn = psycopg2.connect(

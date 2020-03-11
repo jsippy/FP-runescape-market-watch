@@ -3,7 +3,7 @@ from flask import request, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# NEEDED THESE FOR SSL, REMOVE THIS/REFS IF LOCAL
+# NEEDED THESE FOR SSL, UNNECESSARY IF LOCALHOST
 CERT_PATH = 'fullchain.pem'
 PRIV_PATH = 'privkey.pem'
 
@@ -105,5 +105,8 @@ def api_pricedata():
 def page_not_found(e):
     return "<h1>404</h1><p>The resource could not be found.</p>", 404
 
+# LOCALHOST
+app.run()
 
-app.run(host='0.0.0.0', ssl_context=(CERT_PATH, PRIV_PATH))
+# SSL OPEN PORT
+# app.run(host='0.0.0.0', ssl_context=(CERT_PATH, PRIV_PATH))
