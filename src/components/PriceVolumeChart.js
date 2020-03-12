@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
+import { SMA, RSI, StochasticRSI } from "technicalindicators";
 
 class PriceVolumeChart extends Component {
 
@@ -200,18 +201,21 @@ class PriceVolumeChart extends Component {
     }
 
     let curr = this.rsiData.find(d => d.ts === currentDate);
-    let rsi, stoch;
+    let rsi, stoch, d, k;
 
     if (curr) {
       rsi = curr.value;
       stoch = curr.stoch;
 
+      k = curr.k;
+      d = curr.d;
+
     }
 
     return (
       <div className="Legend" style={{"top" : this.candleHeight + this.volumeHeight + this.priceHeight }}>
-        <div className="Label Red">{`RSI: `}<span className="Value">{this.legendFormat(rsi)}</span></div>
-        <div className="Label Orange">{`STOCH RSI: `}<span className="Value">{this.legendFormat(stoch)}</span></div>
+        <div className="Label Red">{`STOCH RSI(k): `}<span className="Value">{this.legendFormat(k)}</span></div>
+        <div className="Label Orange">{`STOCH RSI(d): `}<span className="Value">{this.legendFormat(d)}</span></div>
       </div>
     );
   }
@@ -278,7 +282,7 @@ class PriceVolumeChart extends Component {
   }
   
   buildVolumeChart(chartArea, xScale) {
-    const chartHeight = this.volumeHeight- this.margin.xbuffer - this.margin.bottom;
+    const chartHeight = this.volumeHeight- this.margin.xbuffer;
     this.volumeChart = chartArea
       .append("g")
       .attr("width", this.chartWidth)
@@ -474,8 +478,9 @@ class PriceVolumeChart extends Component {
     const xMax = xScale.invert(this.chartWidth + this.margin.right);
     const data = this.rsiData.filter(d => d.ts > xMin && d.ts < xMax);
 
-    const yMin = d3.min(data, d => d.value) - 5;
-    const yMax = d3.max(data, d => d.value) + 5;
+    const yMin = Math.min(d3.min(data, d => d.d), d3.min(data, d => d.k)) - 5;
+    const yMax = Math.max(d3.max(data, d => d.d), d3.max(data, d => d.k)) + 5;
+
 
     const yScale = d3
       .scaleLinear()
@@ -496,11 +501,11 @@ class PriceVolumeChart extends Component {
 
     const rsiLine = d3.line()
       .x(d => xScale(d.ts))
-      .y(d => yScale(d.value));
+      .y(d => yScale(d.d));
 
     const stochRsiLine = d3.line()
       .x(d => xScale(d.ts))
-      .y(d => yScale(d.value));
+      .y(d => yScale(d.k));
 
     this.rsiChart
       .selectAll(".priceLines")
@@ -536,7 +541,7 @@ class PriceVolumeChart extends Component {
   }
 
   updateVolumeChart(xScale) {
-    const chartHeight = this.volumeHeight - this.margin.xbuffer - this.margin.bottom;
+    const chartHeight = this.volumeHeight - this.margin.xbuffer;
     const xMin = xScale.invert(0 - this.margin.left);
     const xMax = xScale.invert(this.chartWidth + this.margin.right);
     const data = this.props.data
@@ -717,28 +722,33 @@ class PriceVolumeChart extends Component {
       let val = 100 - (100 / (1 + rs));
       rsi.push({
         value: isNaN(val) ? 0 : val,
+        k: 0,
+        d: 0,
         ts: data[index].ts
       })
     }
 
-    // compute stochastic rsi
-    for (var index = period; index < rsi.length; index++) {
-      let win = rsi.slice(index - period, index);
-      let min =d3.min(win, d => d.value)
-      let max =d3.max(win, d => d.value)
-      let curr = rsi[index - 1];
-      let stoch = (curr.value - min) / (max - min);
+    let stoch = StochasticRSI.calculate({values: prices, rsiPeriod: period, stochasticPeriod: period, kPeriod: 3, dPeriod: 3});
+    let startIndex = rsi.length - stoch.length;
 
-      console.log(`min: ${min} max: ${max} curr: ${curr.value} stoch: ${stoch}`)
-
-      if (isNaN(stoch) || Math.abs(stoch) === Infinity) {
-        stoch = 0;
-      }
-
-      rsi[index - 1].stoch = stoch * 100;
+    for (var i = startIndex; i < rsi.length; i++) {
+      rsi[i].k = stoch[i - startIndex].k;
+      rsi[i].d = stoch[i - startIndex].d;
     }
+    // // compute stochastic rsi
+    // for (var index = period; index < rsi.length; index++) {
+    //   let win = rsi.slice(index - period, index);
+    //   let min =d3.min(win, d => d.value)
+    //   let max =d3.max(win, d => d.value)
+    //   let curr = rsi[index - 1];
+    //   let stoch = (curr.value - min) / (max - min);
 
-      console.log(rsi)
+    //   if (isNaN(stoch) || Math.abs(stoch) === Infinity) {
+    //     stoch = 0;
+    //   }
+
+    //   rsi[index - 1].stoch = stoch * 100;
+    // }
     return rsi;
   }
 
