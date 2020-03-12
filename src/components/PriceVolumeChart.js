@@ -16,8 +16,6 @@ class PriceVolumeChart extends Component {
       .domain(d3.extent(this.props.data, d => d.ts))
       .range([0, this.chartWidth]);
 
-    this.currXScale = this.xScale;
-
     this.legendFormat = d3.format(".3~s");
     this.gpFormat = gp => `${d3.format(".3~s")(gp)} gp`;
     this.volFormat = d3.format(".3~s");
@@ -177,7 +175,7 @@ class PriceVolumeChart extends Component {
   renderTooltip() {
     let { margin } = this;
     let { height } = this.props;
-    let { currentDate } = this.state;
+    let { currentDate, currentScale } = this.state;
 
     if (currentDate === null) {
       currentDate = this.props.data[this.props.data.length - 1].ts;
@@ -188,7 +186,7 @@ class PriceVolumeChart extends Component {
     options.timeZoneName = 'short';
 
     return (
-      <div className="tooltip" style={{"left" : this.currXScale(currentDate) - 50, "top" : height - margin.bottom - margin.xbuffer}}>
+      <div className="tooltip" style={{"left" : currentScale(currentDate) - 50, "top" : height - margin.bottom - margin.xbuffer}}>
         <span style={{"position": "center"}}>{new Date(currentDate).toLocaleDateString("en-US", options)}</span>
       </div>
     )
@@ -630,14 +628,15 @@ class PriceVolumeChart extends Component {
     const bisectDate = d3.bisector(d => d.ts).left;
     const { data } = this.props;
     function generateCrosshair() {
-      const mouseX = d3.mouse(this)[0]
+      const { currentScale } = that.state;
+      const mouseX = d3.mouse(this)[0];
       
       if (mouseX < margin.left || mouseX > chartWidth + margin.left) {
         crosshair.style('display', 'none');
         return;
       }
       
-      const date = that.currXScale.invert(mouseX - margin.left);
+      const date = currentScale.invert(mouseX - margin.left);
       const i = bisectDate(data, date, 1, data.length - 1);
       const d0 = data[i - 1];
       const d1 = data[i];
@@ -645,7 +644,7 @@ class PriceVolumeChart extends Component {
       
       that.setState({currentDate : ts})
 
-      const x = margin.left + that.currXScale(ts)
+      const x = margin.left + currentScale(ts)
       crosshair
         .attr("x1", 0)
         .attr("x2", 0)
@@ -781,7 +780,6 @@ class PriceVolumeChart extends Component {
     this.updatePriceChart(newXScale);
     this.updateVolumeChart(newXScale);
     this.updateRSIChart(newXScale);
-
     this.setState({currentScale: newXScale})
   }
 }
