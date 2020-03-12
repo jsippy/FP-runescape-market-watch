@@ -37,6 +37,8 @@ $hover: #474444;
 
 td {
   padding: 8px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 html {
@@ -89,14 +91,14 @@ html {
       padding-bottom: 4px;
       grid-area: header;
       display: flex;
-      background-color: #d66061;
+      background-color: #222;
 
       .Logo {
         text-align: center;
         font-size: 18px;
         margin-left: 12px;
         padding-top: 4px;
-        color:  $bg;
+        color: #e7d62b;
         border-radius: 6px;
         font-family: runescape-bold;
       }

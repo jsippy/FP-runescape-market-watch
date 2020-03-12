@@ -485,10 +485,16 @@ class PriceVolumeChart extends Component {
       .range([chartHeight, 0]);
     
     this.rsiChart.select("#xAxis")
-      .call( d3.axisBottom(xScale) )
+      .call(d3.axisBottom(xScale)
+      .tickSize(-chartHeight)
+      .tickPadding(5)
+      .ticks(10));
 
     this.rsiChart.select("#yAxis")
-      .call(d3.axisRight(yScale).tickFormat(this.volFormat));
+      .call(d3.axisRight(yScale)
+      .tickFormat(this.volFormat)
+      .tickSize(-this.chartWidth)
+      .ticks(10));
 
     const rsiLine = d3.line()
       .x(d => xScale(d.ts))
@@ -563,7 +569,7 @@ class PriceVolumeChart extends Component {
           .attr("class", "volume_bar")
           .attr("clip-path", "url(#volumeclip)")
           .append("rect")
-          .attr("fill", "gray")
+          .attr("fill", "#ae89d5")
           .attr("x", d => xScale(d.ts) - bandwidth / 2)
           .attr("y", d => yScale(d.volume))
           .attr("width", d => bandwidth)
@@ -721,18 +727,19 @@ class PriceVolumeChart extends Component {
       let win = rsi.slice(index - period, index);
       let min =d3.min(win, d => d.value)
       let max =d3.max(win, d => d.value)
-      let curr = rsi[index];
+      let curr = rsi[index - 1];
       let stoch = (curr.value - min) / (max - min);
+
+      console.log(`min: ${min} max: ${max} curr: ${curr.value} stoch: ${stoch}`)
 
       if (isNaN(stoch) || Math.abs(stoch) === Infinity) {
         stoch = 0;
       }
 
-      rsi[index].stoch = stoch;
+      rsi[index - 1].stoch = stoch * 100;
     }
 
-
-
+      console.log(rsi)
     return rsi;
   }
 
