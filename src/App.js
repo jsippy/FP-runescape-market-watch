@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import "./App.scss";
 
 import * as d3 from "d3";
-import ItemMetadata from './data/better_items.json';
+// import ItemMetadata from './data/better_items.json';
 import PriceVolumeChart from './components/PriceVolumeChart.js';
 import PriceTable from './components/PriceTable.js';
 
@@ -64,9 +64,6 @@ class App extends Component {
     let sidebarItems = [];
     let itemMap = {};
 
-    console.log(metadata)
-
-    
     for (let i in metadata) {
       let item = metadata[i];
       sidebarItems.push({
@@ -87,7 +84,6 @@ class App extends Component {
     fetch(`/market_watch_api/prices?id=${sidebarItems[0].id}`, {})
       .then(response => response.json())
       .then(data => { 
-        console.log(data)
         this.setState({
           loading: false,
           items: itemMap,
@@ -148,20 +144,20 @@ class App extends Component {
     });
   }
 
-  renderSidebar(sidebarItems) {
-    return sidebarItems.map((item, i) => {
-      let src = item.id in ItemMetadata ? ItemMetadata[item.id].icon : "";
-      let isActive = item.id === this.state.activeItemId;
-      let className = isActive ? "SidebarItem Active" : "SidebarItem"; 
+  // renderSidebar(sidebarItems) {
+  //   return sidebarItems.map((item, i) => {
+  //     let src = item.id in ItemMetadata ? ItemMetadata[item.id].icon : "";
+  //     let isActive = item.id === this.state.activeItemId;
+  //     let className = isActive ? "SidebarItem Active" : "SidebarItem"; 
       
-      return (
-        <div className={className} key={i} onClick={() => this.setState({activeItemId: item.id})}>
-          <img className="SidebarItemImage" src={src} alt={"MEANINGFUL ALT TEXT"}/>
-          <p>{item.name}</p>
-        </div>
-      );
-    });
-  }
+  //     return (
+  //       <div className={className} key={i} onClick={() => this.setState({activeItemId: item.id})}>
+  //         <img className="SidebarItemImage" src={src} alt={"MEANINGFUL ALT TEXT"}/>
+  //         <p>{item.name}</p>
+  //       </div>
+  //     );
+  //   });
+  // }
 
   onSidebarSelect(id) {
     fetch(`/market_watch_api/prices?id=${id}`, {})
@@ -233,7 +229,7 @@ class App extends Component {
             formatGp={volFormat}
             height={chartHeight}/>
           <div className={expanded ? "Content Expanded" : "Content"}>
-            <div className="ChartContainer" ref={this.chart} style={{margin: 0}}>
+            <div className="ChartContainer" ref={this.chart} style={{margin: 0, position: "relative"}}>
               <PriceVolumeChart metadata={metadata}
                                 data={chartData}
                                 width={chartWidth}

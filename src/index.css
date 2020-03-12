@@ -1,3 +1,23 @@
+@font-face {
+  font-family: 'runescape';
+  font-style: normal;
+  font-weight: normal;
+  src:	url('https://images.wikia.nocookie.net/runescape/images/a/ab/Runescape_chat.eot') format('embedded-opentype'),
+	local("RuneScape Chat"),
+	url('https://images.wikia.nocookie.net/runescape/images/8/87/Runescape_chat.woff') format('woff');
+}
+ 
+@font-face {
+  font-family: 'runescape-bold';
+  font-style: normal;
+  font-weight: bold;
+  src:	url('https://images.wikia.nocookie.net/runescape/images/1/1e/Runescape_chat_bold.eot') format('embedded-opentype'),
+	local("RuneScape Chat Bold 2"),
+	local("RuneScape Chat Bold"),
+	local("RuneScape Chat 2"),
+	url('https://images.wikia.nocookie.net/runescape/images/e/e8/Runescape_chat_bold.woff') format('woff');
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
