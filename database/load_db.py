@@ -16,7 +16,7 @@ SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-complete.json'
 WIKI_URL = 'https://oldschool.runescape.wiki/w/'
 PG_USER = 'osrs'
 PG_PASS = 'runescape'
-POOL_SIZE = 8
+POOL_SIZE = 1
 
 HEAD = {'User-Agent': USER_AGENT }
 
