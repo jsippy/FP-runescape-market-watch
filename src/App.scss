@@ -15,6 +15,10 @@ html {
   overflow: hidden;
 }
 
+.volume_bar {
+  fill: #ae89d5;
+}
+
 .PriceTableRow {
   &:hover {
     background: $hover !important;
@@ -153,6 +157,14 @@ html {
 
         .Label {
           color: rgba(255, 255, 255, 0.5);
+
+          &.Red {
+            color: #d66061;
+          }
+
+          &.Purple {
+            color: #ae89d5;
+          }
 
           &.Blue {
             color: steelblue;

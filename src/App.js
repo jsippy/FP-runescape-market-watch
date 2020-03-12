@@ -25,7 +25,6 @@ class App extends Component {
       filteredItems: [],
     };
     this.chart = React.createRef();
-    this.csvToJson = this.csvToJson.bind(this);
     this.onResize = this.onResize.bind(this);
     this.toggleExpand = this.toggleExpand.bind(this);
     this.filterSidebar = this.filterSidebar.bind(this);
@@ -33,16 +32,7 @@ class App extends Component {
     this.processMetadata = this.processMetadata.bind(this);
   }
 
-  // async load the csv file
   componentDidMount() {
-    // Papa.parse('./data.csv', {
-    //   complete: this.csvToJson,
-    //   download: true,
-    //   header: true,
-    //   skipEmptyLines: true,
-    //   delimiter: ','
-    // });
-    
     window.addEventListener('resize', this.onResize, false);
     fetch('/market_watch_api/metadata', {})
       .then(response => response.json())
@@ -72,7 +62,7 @@ class App extends Component {
       let item = metadata[i];
       sidebarItems.push({
         name: item.name,
-        average: item.price,        // TEMPORARY!!! TODO!!!!!
+        average: item.price, // we could compute sma here instead?
         daily: item.price,
         volume: item.volume,
         id: item.item_id,
@@ -101,54 +91,6 @@ class App extends Component {
       })
   }
 
-  csvToJson(csvData) {
-    let itemMap = {};
-
-    // sort by timestamp so all values are
-    // inserted into itemMap in sorted order
-    csvData.data.sort((a, b) => new Date(a.ts) - new Date(b.ts));
-    csvData.data.forEach(line => {
-      if (!(line.id in itemMap)) {
-        itemMap[line.id] = [];
-      }
-      itemMap[line.id].push(line);
-    });
-
-    // generate some stats here? like percent change?
-    // and store them in this.state so we dont have to
-    // recompute
-    // or we could query that on item selection
-
-    let sidebarItems = [];
-
-    let percentChange = (start, end) => Math.round(1000 * (start - end) / start) / 10;
-
-
-    for (var k in itemMap) {
-      let mostRecent = itemMap[k].slice(-1)[0];
-      let lastMonth = itemMap[k].slice(-30).map(d => d.daily);
-
-      sidebarItems.push({
-        name: mostRecent.name,
-        average: mostRecent.average,
-        daily: mostRecent.daily,
-        volume: mostRecent.volume,
-        id: mostRecent.id,
-        oneDayChange: percentChange(lastMonth[28], lastMonth[29]),
-        oneWeekChange: percentChange(lastMonth[22], lastMonth[29]),
-        oneMonthChange: percentChange(lastMonth[0], lastMonth[29])
-      });
-    }
-
-    this.setState({
-      loading: false,
-      items: itemMap,
-      sidebarItems: sidebarItems,
-      filteredItems: sidebarItems,
-      activeItemId: sidebarItems[0].id
-    });
-  }
-
   renderSidebar(sidebarItems) {
     return sidebarItems.map((item, i) => {
       let src = item.id in ItemMetadata ? ItemMetadata[item.id].icon : "";
@@ -157,7 +99,7 @@ class App extends Component {
       
       return (
         <div className={className} key={i} onClick={() => this.setState({activeItemId: item.id})}>
-          <img className="SidebarItemImage" src={src} alt={"MEANINGFUL ALT TEXT"}/>
+          <img className="SidebarItemImage" src={src} alt={item.name}/>
           <p>{item.name}</p>
         </div>
       );
@@ -169,7 +111,6 @@ class App extends Component {
       .then(response => response.json())
       .then(data => {
         this.setState({activeItemId: id, priceData: data })
-
       })
   }
   
@@ -212,7 +153,7 @@ class App extends Component {
     const chartData = pricehistory.map((row) => ({
       'ts': new Date(row['ts']),
       'daily': +row['price'],
-      'average': +row['price'],         // TODO TEMPORARY AVERAGE FIX!!!
+      'average': +row['price'],         // again, we could compute sma here...
       'volume': +row['volume']
     }))
 

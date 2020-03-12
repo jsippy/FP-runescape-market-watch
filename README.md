@@ -7,7 +7,9 @@ An interactive dashboard for visualizing Oldschool RuneScape market data.
 ## TODO
 
 - [ ] Fix crosshair values on zoom
-- [ ] Compute rolling average in PriceDataChart
+- [ ] Fix volume bar bug on zomm / pan
+- [ ] No NaN, undefined, or weird units in legends
+- [x] Compute rolling average in PriceDataChart
 - [ ] RSI / STOCH RSI chart
 - [ ] Re-implement % change or include Hi alch, store price
 - [ ] Homepage view

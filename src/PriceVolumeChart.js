@@ -20,11 +20,14 @@ class PriceVolumeChart extends Component {
     this.legendFormat = d3.format(".5~s");
 
     this.candleData = this.generateCandlestickData(this.props.data, this.period);
+    this.rsiData = this.generateRSI(this.props.data);
+    this.smaData = this.generateSimpleMovingAverage(this.props.data, 14)
 
     // Chart ratios 
-    this.candleHeight = 0.4 * this.props.height;
-    this.priceHeight = 0.4 * this.props.height;
+    this.candleHeight = 0.3 * this.props.height;
+    this.priceHeight = 0.3 * this.props.height;
     this.volumeHeight = 0.2 * this.props.height;
+    this.rsiHeight = 0.2 * this.props.height;
     
     // Chart colors
     this.green = "#60d68a";
@@ -39,10 +42,9 @@ class PriceVolumeChart extends Component {
     this.renderChartTitle = this.renderChartTitle.bind(this);
 
     this.state = {
-      currentDate: null
+      currentDate: null,
+      currentScale: this.xScale
     }
-
-    console.log(this.props.data)
 
   }
 
@@ -50,6 +52,8 @@ class PriceVolumeChart extends Component {
     if (prevProps !== this.props) {
       if (prevProps.data !== this.props.data) {
         this.candleData = this.generateCandlestickData(this.props.data, this.period);
+        this.rsiData = this.generateRSI(this.props.data);
+        this.smaData = this.generateSimpleMovingAverage(this.props.data, 14);
       }
       this.chartWidth = this.props.width - this.margin.left - this.margin.right
       this.xScale = d3
@@ -66,7 +70,7 @@ class PriceVolumeChart extends Component {
 
   render() {
     return <><div ref={this.node} />
-      {/* {this.renderChartTitle()} */}
+      {this.renderRSILegend()}
       {this.renderCandleLegend()}
       {this.renderPriceLegend()}
       {this.renderVolumeLegend()}
@@ -138,7 +142,7 @@ class PriceVolumeChart extends Component {
 
     return (
       <div className="Legend" style={{"top" : this.candleHeight + this.priceHeight}}>
-        <div className="Label">{`Volume: `}<span className="Value">{this.legendFormat(volume)}</span></div>
+        <div className="Label Purple">{`Volume: `}<span className="Value">{this.legendFormat(volume)}</span></div>
       </div>
     );
   }
@@ -162,6 +166,30 @@ class PriceVolumeChart extends Component {
       <div className="Legend" style={{"top" : this.candleHeight }}>
         <div className="Label Blue">{`Daily: `}<span className="Value">{this.legendFormat(daily)}</span></div>
         <div className="Label Orange">{`Average: `}<span className="Value">{this.legendFormat(average)}</span></div>
+      </div>
+    );
+  }
+
+  renderRSILegend() {
+    let { currentDate } = this.state;
+
+    if (currentDate === null) {
+      currentDate = this.rsiData[this.rsiData.length - 1].ts;
+    }
+
+    let curr = this.rsiData.find(d => d.ts === currentDate);
+    let rsi, stoch;
+
+    if (curr) {
+      rsi = curr.value;
+      stoch = curr.stoch;
+
+    }
+
+    return (
+      <div className="Legend" style={{"top" : this.candleHeight + this.volumeHeight + this.priceHeight }}>
+        <div className="Label Red">{`RSI: `}<span className="Value">{this.legendFormat(rsi)}</span></div>
+        <div className="Label Orange">{`STOCH RSI: `}<span className="Value">{this.legendFormat(stoch)}</span></div>
       </div>
     );
   }
@@ -256,6 +284,35 @@ class PriceVolumeChart extends Component {
     this.updateVolumeChart(xScale);
   }
 
+  buildRSIChart(chartArea, xScale) {
+    const chartHeight = this.rsiHeight- this.margin.xbuffer;
+    this.rsiChart = chartArea
+      .append("g")
+      .attr("width", this.chartWidth)
+      .attr("height", chartHeight)
+      .attr("transform", `translate(${this.margin.left}, 0)`)
+    
+    this.rsiChart.append("defs").append("svg:clipPath")
+      .attr("id", "rsiclip")
+      .append("svg:rect")
+      .attr("width", this.chartWidth)
+      .attr("height", chartHeight)
+      .attr("x", 0)
+      .attr("y", 0)
+
+    this.rsiChart
+      .append("g")
+      .attr("id", "xAxis")
+      .attr("transform", `translate(0, ${chartHeight})`)
+
+    this.rsiChart
+      .append("g")
+      .attr("id", "yAxis")
+      .attr("transform", `translate(${this.chartWidth}, 0)`);
+
+    this.updateRSIChart(xScale);
+  }
+
   updateCandlestickChart(xScale) {
     const chartHeight = this.candleHeight - this.margin.top - this.margin.xbuffer;
     const xMin = xScale.invert(0);
@@ -287,7 +344,7 @@ class PriceVolumeChart extends Component {
             .attr("fill", d => d.close >= d.open ? this.green : this.red)
             .attr("x", d => xScale(d.start))
             .attr("y", d => yScale(Math.max(d.open, d.close)))
-            .attr("width", d => xScale(d.end) - xScale(d.start))
+            .attr("width", d => (xScale(d.end) - xScale(d.start)))
             .attr("height", d => Math.max(2, Math.abs(yScale(d.open) - yScale(d.close))));
           group.append("line")
             .attr("x1", d => xScale(d.start) + (xScale(d.end) - xScale(d.start)) / 2)
@@ -320,7 +377,11 @@ class PriceVolumeChart extends Component {
     const chartHeight = this.priceHeight - this.margin.xbuffer;
     const xMin = xScale.invert(0 - this.margin.left);
     const xMax = xScale.invert(this.chartWidth + this.margin.right);
-    const data = this.props.data.filter(d => d.ts > xMin && d.ts < xMax);
+    const data = this.props.data.filter(d => d.ts > xMin && d.ts < xMax).map(d => {
+      let avg = this.smaData.find((e) => e.ts === d.ts);
+      d.average = avg.avg;
+      return d;
+    })
 
     const yMin = Math.min(d3.min(data, d => d.daily), d3.min(data, d => d.average)) - 5
     const yMax = Math.max(d3.max(data, d => d.daily), d3.max(data, d => d.average)) + 5
@@ -376,6 +437,67 @@ class PriceVolumeChart extends Component {
       )
   }
 
+  updateRSIChart(xScale) {
+    const chartHeight = this.rsiHeight - this.margin.xbuffer;
+    const xMin = xScale.invert(0 - this.margin.left);
+    const xMax = xScale.invert(this.chartWidth + this.margin.right);
+    const data = this.rsiData.filter(d => d.ts > xMin && d.ts < xMax);
+
+    const yMin = d3.min(data, d => d.value) - 5;
+    const yMax = d3.max(data, d => d.value) + 5;
+
+    const yScale = d3
+      .scaleLinear()
+      .domain([Math.max(yMin, 0), yMax])
+      .range([chartHeight, 0]);
+    
+    this.rsiChart.select("#xAxis")
+      .call( d3.axisBottom(xScale) )
+
+    this.rsiChart.select("#yAxis")
+      .call(d3.axisRight(yScale).tickFormat(this.volFormat));
+
+    const rsiLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(d.value));
+
+    const stochRsiLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(d.value));
+
+    this.rsiChart
+      .selectAll(".priceLines")
+      .data([data])
+      .join(
+        enter => {
+          const group = enter.append("g")
+            .attr("class", "priceLines")
+            .attr("clip-path", "url(#priceclip)");
+          group.append("path")
+            .attr("id", "dailyline")
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 3.0)
+            .attr("d", rsiLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "#d66061")
+            .attr("stroke-width", 3.0)
+            .attr("d", stochRsiLine)
+        },
+        update => {
+          update.select("#dailyline")
+            // .transition().duration(0)    // Do we need these, was glitchy earlier but seems fine now
+            .attr("d", rsiLine)
+          update.select("#averageline")
+            // .transition().duration(0)
+            .attr("d", stochRsiLine)
+        },
+        exit => exit.remove()
+      )
+  }
+
   updateVolumeChart(xScale) {
     const chartHeight = this.volumeHeight - this.margin.xbuffer - this.margin.bottom;
     const xMin = xScale.invert(0 - this.margin.left);
@@ -403,7 +525,6 @@ class PriceVolumeChart extends Component {
           .attr("class", "volume_bar")
           .attr("clip-path", "url(#volumeclip)")
           .append("rect")
-          .attr("fill", "gray")
           .attr("x", d => xScale(d.ts))
           .attr("y", d => yScale(d.volume))
           .attr("width", d => bandwidth)
@@ -443,9 +564,16 @@ class PriceVolumeChart extends Component {
       .attr("height", this.volumeHeight)
       .attr("transform", `translate(0, ${this.candleHeight + this.priceHeight})`);
 
+    const rsiArea = svg
+      .append("g")
+      .attr("width", this.props.width)
+      .attr("height", this.volumeHeight)
+      .attr("transform", `translate(0, ${this.candleHeight + this.priceHeight + this.volumeHeight})`)
+
     this.buildCandlestickChart(candlestickArea, this.xScale);
     this.buildPriceChart(priceArea, this.xScale);
     this.buildVolumeChart(volumeArea, this.xScale);
+    this.buildRSIChart(rsiArea, this.xScale);
 
     // CROSSHAIR ////////////////////////////////////////////////////////////// 
     svg
@@ -482,19 +610,97 @@ class PriceVolumeChart extends Component {
 
     svg
       .on("mousemove", generateCrosshair)
-      // .on("mouseover", () => priceFocus.style("display", null))
+      // .on("mouseover", () => this.priceChart.style("display", null))
       // .on("mouseout", () => {
-      //   priceFocus.style("display", "none");
-      //   volumeChart.selectAll("rect").attr("fill", "steelblue");
+      //   this.priceChart.style("display", "none");
+      //   this.volumeChart.selectAll("rect").attr("fill", "steelblue");
       // });
 
     const zoom = d3.zoom()
-      .scaleExtent([1, 4])
+      .scaleExtent([1, 8])
       .extent([[this.margin.left, this.margin.top], [this.props.width - this.margin.right, this.candleHeight - this.margin.xbuffer]])
       .translateExtent([[this.margin.left, -Infinity], [this.props.width - this.margin.right, Infinity]])
       .on("zoom", this.zoomed);
       
     svg.call(zoom);
+  }
+
+  generateRSI(data) {
+    let period = 14;
+    let rsi = [];
+    let prices = data.map((d) => d.daily)
+
+    let avgGain = 0;
+    let avgLoss = 0;
+
+    // compute rsi
+    for (var i = 1; i < period; i++) {
+      let change = (prices[i] - prices[i-1]) / prices[i-1] * 100;
+      let gain = change >= 0 ? change : 0.0;
+      let loss = change < 0 ? (-1) * change : 0.0;
+      console.log(change);
+      avgGain += gain;
+      avgLoss += loss;
+    }
+
+    avgGain /= period;
+    avgLoss /= period;
+
+    for (var index = period; index < data.length; index++) {
+      let change = (prices[index] - prices[index-1]) / prices[index-1] * 100;
+      let gain = change >= 0 ? change : 0.0;
+      let loss = change < 0 ? (-1) * change : 0.0;
+      
+      avgGain = ((avgGain) * 13 + gain) / 14;
+      avgLoss = ((avgLoss) * 13 + loss) / 14;
+      let rs = avgGain / avgLoss;
+      let val = 100 - (100 / (1 + rs));
+      rsi.push({
+        value: isNaN(val) ? 0 : val,
+        ts: data[index].ts
+      })
+    }
+
+    // compute stochastic rsi
+    for (var index = period; index < rsi.length; index++) {
+      let win = rsi.slice(index - period, index);
+      let min =d3.min(win, d => d.value)
+      let max =d3.max(win, d => d.value)
+
+      
+
+      let curr = rsi[index];
+      let stoch = (curr.value - min) / (max - min);
+
+      if (isNaN(stoch) || Math.abs(stoch) === Infinity) {
+        stoch = 0;
+      }
+
+      rsi[index].stoch = stoch;
+    }
+
+
+
+    return rsi;
+  }
+
+  generateSimpleMovingAverage(data, period) {
+    let result = [];
+    let initAverage = 0;
+
+    data.forEach((d, i) => {
+      if (i < period) {
+        initAverage += d.daily
+        result.push({ts: d.ts, avg: initAverage / (i + 1)})
+      } else {
+        let win = data.slice(i - period, i);
+        let avg = win.reduce((a, b) => a + b.daily, 0) / period;
+
+        result.push({ts: d.ts, avg: avg})
+      }
+    })
+
+    return result;
   }
 
   generateCandlestickData(data, period) {
@@ -522,6 +728,9 @@ class PriceVolumeChart extends Component {
     this.updateCandlestickChart(newXScale);
     this.updatePriceChart(newXScale);
     this.updateVolumeChart(newXScale);
+    this.updateRSIChart(newXScale);
+
+    this.setState({currentScale: newXScale})
   }
 }
 
