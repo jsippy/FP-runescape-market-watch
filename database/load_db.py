@@ -16,7 +16,7 @@ SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-complete.json'
 WIKI_URL = 'https://oldschool.runescape.wiki/w/'
 PG_USER = 'osrs'
 PG_PASS = 'runescape'
-POOL_SIZE = 8
+POOL_SIZE = 1
 
 HEAD = {'User-Agent': USER_AGENT }
 
@@ -80,16 +80,19 @@ def scrapeURL(args):
     for span in spans:
         split = span.text.strip('\'').split(':')
         if len(split) == 2:
-            time, price = split
+            time = int(split[0])
+            price = int(split[1])
             vol = None
         elif len(split) == 3:
-            time, price, vol = split
+            time = int(split[0])
+            price = int(split[1])
+            vol = int(split[2])
         else:
             print('Something is wrong with this line {}'.format(span.text))
             assert False
-        
-        date = datetime.utcfromtimestamp(int(time)).strftime('%m-%d-%Y %H:%M:%S')
-        result.append((str(item_id), date, price, vol))
+
+        date = datetime.utcfromtimestamp(time).strftime('%m-%d-%Y %H:%M:%S')
+        result.append((item_id, date, price, vol))
     return result
 
 

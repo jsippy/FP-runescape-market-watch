@@ -6,6 +6,35 @@ $text: #222;
 $primary: #212121;
 $hover: #474444;
 
+// #xAxis line {
+//   stroke-opacity: 0.3;
+//   shape-rendering: crispEdges;
+// }
+
+// #yAxis line {
+//   stroke-opacity: 0.3;
+//   shape-rendering: crispEdges;
+// }
+.domain {
+  stroke-opacity: 0.3;
+}
+
+.tick {
+  stroke-opacity: 0.3;
+  shape-rendering: crispEdges;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  margin: 10px 0px 0px 10px;
+  padding: 5px 10px 5px 10px;
+  background: $hover;
+  background: rgba(20,20,20, 0.9);
+  border-radius: 6px;
+  min-width: 100px;
+}
+
 td {
   padding: 8px !important;
 }
@@ -34,6 +63,7 @@ html {
   display: flex;
   flex-direction: column;
 }
+
 .Container {
   display: grid;
   grid-template-columns: 400px auto;
@@ -68,7 +98,7 @@ html {
         padding-top: 4px;
         color:  $bg;
         border-radius: 6px;
-        font-family: 'Press Start 2P', cursive;
+        font-family: runescape-bold;
       }
     }
 
@@ -135,8 +165,7 @@ html {
       flex-grow: 1;
       max-height: 100%;
       margin: 50px;
-
-
+      position: relative;
 
       .ChartTitle {
         display: flex;
@@ -148,10 +177,11 @@ html {
 
       .Legend {
         position: absolute;
+        pointer-events: none;
         margin: 10px 0px 0px 10px;
         padding: 5px 10px 5px 10px;
         background: $hover;
-        background: rgba(20,20,20, 0.5);;
+        background: rgba(20,20,20, 0.9);;
         border-radius: 6px;
         min-width: 100px;
 
@@ -223,8 +253,6 @@ html {
 
       }
     }
-
-     
   }
 }
 
