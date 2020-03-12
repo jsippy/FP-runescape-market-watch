@@ -19,27 +19,6 @@ def home():
     return '''<h1>OSRS MARKET WATCH API</h1>'''
 
 
-# OLD CALL NO PRICE VOLUME
-# @app.route(API_BASE + 'metadata', methods=['GET'])
-# def api_metadata():
-#     conn = psycopg2.connect(
-#       host="localhost",
-#       database="market_watch",
-#       user=PG_USER,
-#       password=PG_PASS,
-#     )
-#
-#     # query_parameters = request.args
-#     # id = query_parameters.get('id')
-#     # name = query_parameters.get('name')
-#
-#     cur = conn.cursor(cursor_factory=RealDictCursor)
-#     cur.execute('SELECT * FROM metadata')
-#     result = cur.fetchall()
-#
-#     return jsonify(result)
-
-
 @app.route(API_BASE + 'metadata', methods=['GET'])
 def api_metadata():
     conn = psycopg2.connect(
@@ -48,10 +27,6 @@ def api_metadata():
       user=PG_USER,
       password=PG_PASS,
     )
-
-    # query_parameters = request.args
-    # id = query_parameters.get('id')
-    # name = query_parameters.get('name')
 
     cur = conn.cursor(cursor_factory=RealDictCursor)
     query = '''SELECT  m.*, p.*
@@ -86,7 +61,6 @@ def api_pricedata():
     item_id = query_parameters.get('id')
 
     if not item_id:
-        print('No id given')
         return page_not_found(404)
     else:
         try:
@@ -96,6 +70,45 @@ def api_pricedata():
 
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute('SELECT * FROM price_history WHERE item_id=%d' % item_id)
+    result = cur.fetchall()
+
+    return jsonify(result)
+
+
+@app.route(API_BASE + 'full_price', methods=['GET'])
+def api_fullpricedata():
+    conn = psycopg2.connect(
+      host="localhost",
+      database="market_watch",
+      user=PG_USER,
+      password=PG_PASS,
+    )
+
+    query_parameters = request.args
+    item_id = query_parameters.get('id')
+
+    if not item_id:
+        return page_not_found(404)
+    else:
+        try:
+            item_id = int(item_id)
+        except:
+            return page_not_found(404)
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('''
+    SELECT prices.item_id, dates.ts, prices.price, prices.volume
+    FROM (
+        SELECT generate_series(min(ts), max(ts), '1d')::date as ts
+        FROM price_history WHERE item_id={0:d}
+    ) dates
+    LEFT JOIN (
+        SELECT *
+        FROM price_history WHERE item_id={0:d}
+    ) prices 
+    USING (ts)
+    ORDER BY dates.ts
+    '''.format(item_id))
     result = cur.fetchall()
 
     return jsonify(result)

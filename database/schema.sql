@@ -20,7 +20,7 @@ create table metadata (
 create table price_history (
   item_id int,
   ts timestamp NOT NULL,
-  price integer NOT NULL,
+  price integer,
   volume BIGINT,
   FOREIGN KEY (item_id) REFERENCES metadata (item_id),
   PRIMARY KEY (item_id,ts)
