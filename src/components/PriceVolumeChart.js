@@ -170,7 +170,7 @@ class PriceVolumeChart extends Component {
 
     return (
       <div className="Legend" style={{"top" : this.candleHeight + this.priceHeight}}>
-        <div className="Label Purple">{`Volume: `}<span className="Value">{this.legendFormat(volume)}</span></div>
+        <div className="Label LightBlue">{`Volume: `}<span className="Value">{this.legendFormat(volume)}</span></div>
       </div>
     );
   }
@@ -572,7 +572,7 @@ class PriceVolumeChart extends Component {
           group.append("path")
             .attr("id", "dailyline")
             .attr("fill", "none")
-            .attr("stroke", "#d337ff")
+            .attr("stroke", "#c677dc")
             .attr("stroke-width", 2.0)
             .attr("d", rsiLine)
         },
@@ -631,7 +631,7 @@ class PriceVolumeChart extends Component {
           group.append("path")
             .attr("id", "dailyline")
             .attr("fill", "none")
-            .attr("stroke", "steelblue")
+            .attr("stroke", "#46a4f3")
             .attr("stroke-width", 2.0)
             .attr("d", rsiLine)
           group.append("path")
@@ -685,7 +685,7 @@ class PriceVolumeChart extends Component {
           .attr("class", "volume_bar")
           .attr("clip-path", "url(#volumeclip)")
           .append("rect")
-          .attr("fill", "#ae89d5")
+          .attr("fill", "#6395a4")
           .attr("x", d => xScale(d.ts) - bandwidth / 2)
           .attr("y", d => yScale(d.volume))
           .attr("width", d => bandwidth)
