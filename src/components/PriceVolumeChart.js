@@ -184,7 +184,6 @@ class PriceVolumeChart extends Component {
 
     const options = {  year: 'numeric', month: 'short', day: 'numeric' };
     options.timeZone = 'UTC';
-    options.timeZoneName = 'short';
 
     return (
       <div className="tooltip" style={{"left" : currentScale(currentDate) - 50, "top" : height - margin.bottom - margin.xbuffer}}>
@@ -215,7 +214,7 @@ class PriceVolumeChart extends Component {
     return (
       <div className="Legend" style={{"top" : this.candleHeight + this.volumeHeight + this.priceHeight }}>
         <div className="Label Red">{`STOCH RSI(k): `}<span className="Value">{this.legendFormat(k)}</span></div>
-        <div className="Label Orange">{`STOCH RSI(d): `}<span className="Value">{this.legendFormat(d)}</span></div>
+        <div className="Label Blue">{`STOCH RSI(d): `}<span className="Value">{this.legendFormat(d)}</span></div>
       </div>
     );
   }
@@ -735,20 +734,7 @@ class PriceVolumeChart extends Component {
       rsi[i].k = stoch[i - startIndex].k;
       rsi[i].d = stoch[i - startIndex].d;
     }
-    // // compute stochastic rsi
-    // for (var index = period; index < rsi.length; index++) {
-    //   let win = rsi.slice(index - period, index);
-    //   let min =d3.min(win, d => d.value)
-    //   let max =d3.max(win, d => d.value)
-    //   let curr = rsi[index - 1];
-    //   let stoch = (curr.value - min) / (max - min);
-
-    //   if (isNaN(stoch) || Math.abs(stoch) === Infinity) {
-    //     stoch = 0;
-    //   }
-
-    //   rsi[index - 1].stoch = stoch * 100;
-    // }
+    
     return rsi;
   }
 
