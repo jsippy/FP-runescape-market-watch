@@ -813,7 +813,13 @@ class PriceVolumeChart extends Component {
       .scaleExtent([1, maxScale])
       .extent([[this.margin.left, this.margin.top], [this.props.width - this.margin.right, this.candleHeight - this.margin.xbuffer]])
       .translateExtent([[this.margin.left, -Infinity], [this.props.width - this.margin.right, Infinity]])
-      .on("zoom", this.zoomed);
+      .on("start", () => {
+        crosshair.style("display", "none")
+      })
+      .on("zoom", this.zoomed)
+      .on("end", () => {
+        crosshair.style("display", null)
+      })
 
     div
     .call(zoom)
@@ -907,6 +913,8 @@ class PriceVolumeChart extends Component {
   }
 
   zoomed() {
+    console.log(d3.event.type);
+    
     const transform = d3.event.transform;
     const newXScale = transform.rescaleX(this.xScale);
     this.updateCandlestickChart(newXScale);
