@@ -70,9 +70,13 @@ class App extends Component {
 
     }
 
+    // sort alphabetically on name
+    sidebarItems.sort((a,b) => (a.name > b.name) ? 1 : -1);
+
     fetch(`/market_watch_api/prices?id=${sidebarItems[0].id}`, {})
       .then(response => response.json())
       .then(data => { 
+
         this.setState({
           loading: false,
           items: itemMap,

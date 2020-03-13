@@ -16,6 +16,13 @@ class PriceVolumeChart extends Component {
       .scaleUtc()
       .domain(d3.extent(this.props.data, d => d.ts))
       .range([0, this.chartWidth]);
+            
+    let d0 = new Date(2019, 1, 1);
+    let d1 = new Date(2020, 1, 1);
+
+    this.transform = d3.zoomIdentity
+      .scale(this.chartWidth / (this.xScale(d1) - this.xScale(d0)))
+      .translate(-this.xScale(d0), 0)
 
     this.legendFormat = d3.format(".3~s");
     this.gpFormat = gp => `${d3.format(".3~s")(gp)} gp`;
@@ -51,7 +58,7 @@ class PriceVolumeChart extends Component {
 
     this.state = {
       currentDate: null,
-      currentScale: this.xScale
+      currentScale: this.transform.rescaleX(this.xScale)
     }
 
   }
@@ -555,7 +562,7 @@ class PriceVolumeChart extends Component {
       .call(d3.axisRight(yScale)
       .tickFormat(this.volFormat)
       .tickSize(-this.chartWidth)
-      .ticks(10));
+      .ticks(5));
 
     const rsiLine = d3.line()
       .x(d => xScale(d.ts))
@@ -610,7 +617,7 @@ class PriceVolumeChart extends Component {
       .call(d3.axisRight(yScale)
       .tickFormat(this.volFormat)
       .tickSize(-this.chartWidth)
-      .ticks(10));
+      .ticks(5));
 
     const rsiLine = d3.line()
       .x(d => xScale(d.ts))
@@ -738,11 +745,11 @@ class PriceVolumeChart extends Component {
       .attr("height", this.stochRsiHeight)
       .attr("transform", `translate(0, ${this.candleHeight + this.priceHeight + this.volumeHeight + this.rsiHeight})`)
 
-    this.buildCandlestickChart(candlestickArea, this.xScale);
-    this.buildPriceChart(priceArea, this.xScale);
-    this.buildVolumeChart(volumeArea, this.xScale);
-    this.buildRSIChart(rsiArea, this.xScale);
-    this.buildStochRSIChart(stochRsiArea, this.xScale);
+    this.buildCandlestickChart(candlestickArea, this.state.currentScale);
+    this.buildPriceChart(priceArea, this.state.currentScale);
+    this.buildVolumeChart(volumeArea, this.state.currentScale);
+    this.buildRSIChart(rsiArea, this.state.currentScale);
+    this.buildStochRSIChart(stochRsiArea, this.state.currentScale);
 
     const crosshair = svg
       .append("line")
@@ -801,15 +808,17 @@ class PriceVolumeChart extends Component {
       })
 
     const domain = this.xScale.domain()
-    // const maxScale = (domain[1].getTime() - domain[0].getTime()) / (1000 * 60 * 60 * 24 * 31);
     const maxScale = (domain[1].getTime() - domain[0].getTime()) / (1000 * 60 * 60 * 24 * 31 * 2)
     const zoom = d3.zoom()
       .scaleExtent([1, maxScale])
       .extent([[this.margin.left, this.margin.top], [this.props.width - this.margin.right, this.candleHeight - this.margin.xbuffer]])
       .translateExtent([[this.margin.left, -Infinity], [this.props.width - this.margin.right, Infinity]])
       .on("zoom", this.zoomed);
-      
-    div.call(zoom);
+
+    div
+    .call(zoom)
+    .call(zoom.transform, this.transform)
+
   }
 
   generateRSI(data, period) {
@@ -824,7 +833,6 @@ class PriceVolumeChart extends Component {
       let change = (prices[i] - prices[i-1]) / prices[i-1] * 100;
       let gain = change >= 0 ? change : 0.0;
       let loss = change < 0 ? (-1) * change : 0.0;
-      console.log(change);
       avgGain += gain;
       avgLoss += loss;
     }
