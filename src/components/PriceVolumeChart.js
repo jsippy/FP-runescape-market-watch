@@ -79,7 +79,8 @@ class PriceVolumeChart extends Component {
 
   render() {
     return <><div ref={this.node} />
-      {/* {this.renderStochRSILegend()} */}
+      {this.renderRSILegend()}
+      {this.renderStochRSILegend()}
       {this.renderCandleLegend()}
       {this.renderPriceLegend()}
       {this.renderVolumeLegend()}
@@ -119,7 +120,7 @@ class PriceVolumeChart extends Component {
     }
 
     return (
-      <div className="Legend" style={{"top" : 0}}>
+      <div className="Legend" style={{"top" : this.margin.top}}>
         <div className="LegendHeader">
           <img className="LegendIcon" src={`data:image/png;base64,${metadata.icon}`} alt={metadata.name}/>
           <div className="ItemName">{metadata.name.replace(/_/g, ' ')}</div>
@@ -193,6 +194,27 @@ class PriceVolumeChart extends Component {
     )
   }
 
+  renderRSILegend() {
+    let { currentDate } = this.state;
+
+    if (currentDate === null) {
+      currentDate = this.rsiData[this.rsiData.length - 1].ts;
+    }
+
+    let curr = this.rsiData.find(d => d.ts === currentDate);
+    let rsi;
+
+    if (curr) {
+      rsi = curr.value;
+    }
+
+    return (
+      <div className="Legend" style={{"top" : this.candleHeight + this.volumeHeight + this.priceHeight}}>
+        <div className="Label Pink">{`RSI: `}<span className="Value">{this.legendFormat(rsi)}</span></div>
+      </div>
+    );
+  }
+
   renderStochRSILegend() {
     let { currentDate } = this.state;
 
@@ -213,7 +235,7 @@ class PriceVolumeChart extends Component {
     }
 
     return (
-      <div className="Legend" style={{"top" : this.candleHeight + this.volumeHeight + this.priceHeight }}>
+      <div className="Legend" style={{"top" : this.candleHeight + this.volumeHeight + this.priceHeight + this.rsiHeight }}>
         <div className="Label Red">{`STOCH RSI(k): `}<span className="Value">{this.legendFormat(k)}</span></div>
         <div className="Label Blue">{`STOCH RSI(d): `}<span className="Value">{this.legendFormat(d)}</span></div>
       </div>

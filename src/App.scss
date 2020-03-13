@@ -182,16 +182,19 @@ html {
       .Legend {
         position: absolute;
         pointer-events: none;
-        margin: 10px 0px 0px 10px;
+        margin: 0px 0px 0px 20px;
         padding: 5px 10px 5px 10px;
-        background: $hover;
-        background: rgba(20,20,20, 0.7);;
-        border-radius: 6px;
+        background: #474444;
+        background: rgba(20, 20, 20, 0.7);
         min-width: 100px;
+        font-size: 12px;
 
         .Label {
           color: rgba(255, 255, 255, 0.5);
 
+          &.Pink {
+            color: #d337ff;
+          }
           &.Red {
             color: #d66061;
           }
@@ -217,14 +220,14 @@ html {
           display: flex;
 
           .LegendIcon {
-            width: 40px;
-            height: 40px;
+            width: 25px;
+            height: 25px;
           }
 
 
           .ItemName {
-            font-size: 16px;
-            margin-top: 8px;
+            font-size: 14px;
+            margin-top: 4px;
           }
         }
       }
