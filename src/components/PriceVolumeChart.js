@@ -17,8 +17,10 @@ class PriceVolumeChart extends Component {
       .domain(d3.extent(this.props.data, d => d.ts))
       .range([0, this.chartWidth]);
             
-    let d0 = new Date(2019, 1, 1);
-    let d1 = new Date(2020, 1, 1);
+    // Set inital date range to last year worth of data
+    let d1 = d3.max(this.props.data, d => d.ts);
+    let d0 = new Date(d1);
+    d0.setFullYear(d1.getFullYear() - 1);
 
     this.transform = d3.zoomIdentity
       .scale(this.chartWidth / (this.xScale(d1) - this.xScale(d0)))
