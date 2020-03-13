@@ -750,6 +750,7 @@ class PriceVolumeChart extends Component {
       .style("fill", "none")
       .style("pointer-events", "none")
       .style("stroke", this.text)
+      .style("opacity", 0.70)
       .style("stroke-width", "1.5px");
 
 
@@ -779,8 +780,8 @@ class PriceVolumeChart extends Component {
       crosshair
         .attr("x1", 0)
         .attr("x2", 0)
-        .attr("y1", 0)
-        .attr("y2", height)
+        .attr("y1", margin.top)
+        .attr("y2", height - margin.bottom)
         .attr("display", null)
         .attr("transform", `translate(${x}, 0)`)
     }
