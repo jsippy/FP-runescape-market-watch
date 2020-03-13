@@ -53,7 +53,12 @@ class PriceTable extends Component {
             className="Searchbar"
             style={{ width: "100%" }}
             placeholder="Search..."
-            onChange={this.props.filterSidebar}>
+            onKeyDown={(e) => {
+              if (e.which === 13 && !e.shiftKey) {
+                  this.props.filterSidebar(e);
+              }
+          }}>
+
             </Input>
           <Button
             onClick={this.props.toggleExpand}

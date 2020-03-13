@@ -627,6 +627,14 @@ class PriceVolumeChart extends Component {
       .x(d => xScale(d.ts))
       .y(d => yScale(d.k));
 
+    const upperBoundLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(80));
+
+    const lowerBoundLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(20));
+
     this.stochRsiChart
       .selectAll(".priceLines")
       .data([data])
@@ -647,6 +655,22 @@ class PriceVolumeChart extends Component {
             .attr("stroke", "#d66061")
             .attr("stroke-width", 2.0)
             .attr("d", stochRsiLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-dasharray", 4)
+            .style("opacity", 0.5)
+            .attr("d", upperBoundLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-dasharray", 4)
+            .style("opacity", 0.5)
+            .attr("d", lowerBoundLine)
         },
         update => {
           update.select("#dailyline")
