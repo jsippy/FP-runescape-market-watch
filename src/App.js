@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import "./App.scss";
 
 import * as d3 from "d3";
-// import ItemMetadata from './data/better_items.json';
 import PriceVolumeChart from './components/PriceVolumeChart.js';
 import PriceTable from './components/PriceTable.js';
 

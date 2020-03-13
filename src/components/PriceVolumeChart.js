@@ -231,7 +231,14 @@ class PriceVolumeChart extends Component {
 
       k = curr.k;
       d = curr.d;
+    }
 
+    if (k < 0) {
+      k = 0;
+    }
+
+    if (d < 0) {
+      d = 0;
     }
 
     return (
@@ -566,7 +573,7 @@ class PriceVolumeChart extends Component {
             .attr("id", "dailyline")
             .attr("fill", "none")
             .attr("stroke", "#d337ff")
-            .attr("stroke-width", 3.0)
+            .attr("stroke-width", 2.0)
             .attr("d", rsiLine)
         },
         update => {
@@ -625,13 +632,13 @@ class PriceVolumeChart extends Component {
             .attr("id", "dailyline")
             .attr("fill", "none")
             .attr("stroke", "steelblue")
-            .attr("stroke-width", 3.0)
+            .attr("stroke-width", 2.0)
             .attr("d", rsiLine)
           group.append("path")
             .attr("id", "averageline")
             .attr("fill", "none")
             .attr("stroke", "#d66061")
-            .attr("stroke-width", 3.0)
+            .attr("stroke-width", 2.0)
             .attr("d", stochRsiLine)
         },
         update => {
