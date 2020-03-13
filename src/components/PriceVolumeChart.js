@@ -10,7 +10,7 @@ class PriceVolumeChart extends Component {
     this.margin = { top: 20, right: 60, left: 20, bottom: 20, xbuffer: 20 };
     this.period = 7;
 
-    this.chartWidth = this.props.width - this.margin.left - this.margin.right
+    this.chartWidth = this.props.width - this.margin.left - this.margin.right;
 
     this.xScale = d3
       .scaleUtc()
@@ -26,10 +26,11 @@ class PriceVolumeChart extends Component {
     this.smaData = this.generateSimpleMovingAverage(this.props.data, 14);
 
     // Chart ratios 
-    this.candleHeight = 0.3 * this.props.height;
-    this.priceHeight = 0.3 * this.props.height;
-    this.volumeHeight = 0.2 * this.props.height;
-    this.rsiHeight = 0.2 * this.props.height;
+    this.candleHeight = 0.35 * this.props.height;
+    this.priceHeight = 0.25 * this.props.height;
+    this.volumeHeight = 0.1333 * this.props.height;
+    this.rsiHeight = 0.1333 * this.props.height;
+    this.stochRsiHeight = 0.1333 * this.props.height;
     
     // Chart colors
     this.green = "#60d68a";
@@ -78,7 +79,7 @@ class PriceVolumeChart extends Component {
 
   render() {
     return <><div ref={this.node} />
-      {this.renderRSILegend()}
+      {/* {this.renderStochRSILegend()} */}
       {this.renderCandleLegend()}
       {this.renderPriceLegend()}
       {this.renderVolumeLegend()}
@@ -192,7 +193,7 @@ class PriceVolumeChart extends Component {
     )
   }
 
-  renderRSILegend() {
+  renderStochRSILegend() {
     let { currentDate } = this.state;
 
     if (currentDate === null) {
@@ -336,6 +337,35 @@ class PriceVolumeChart extends Component {
       .attr("transform", `translate(${this.chartWidth}, 0)`);
 
     this.updateRSIChart(xScale);
+  }
+
+  buildStochRSIChart(chartArea, xScale) {
+    const chartHeight = this.stochRsiHeight- this.margin.xbuffer;
+    this.stochRsiChart = chartArea
+      .append("g")
+      .attr("width", this.chartWidth)
+      .attr("height", chartHeight)
+      .attr("transform", `translate(${this.margin.left}, 0)`)
+    
+    this.stochRsiChart.append("defs").append("svg:clipPath")
+      .attr("id", "stochrsiclip")
+      .append("svg:rect")
+      .attr("width", this.chartWidth)
+      .attr("height", chartHeight)
+      .attr("x", 0)
+      .attr("y", 0)
+
+    this.stochRsiChart
+      .append("g")
+      .attr("id", "xAxis")
+      .attr("transform", `translate(0, ${chartHeight})`)
+
+    this.stochRsiChart
+      .append("g")
+      .attr("id", "yAxis")
+      .attr("transform", `translate(${this.chartWidth}, 0)`);
+
+    this.updateStochRSIChart(xScale);
   }
 
   updateCandlestickChart(xScale) {
@@ -500,13 +530,68 @@ class PriceVolumeChart extends Component {
 
     const rsiLine = d3.line()
       .x(d => xScale(d.ts))
+      .y(d => yScale(d.value));
+
+    this.rsiChart
+      .selectAll(".priceLines")
+      .data([data])
+      .join(
+        enter => {
+          const group = enter.append("g")
+            .attr("class", "priceLines")
+            .attr("clip-path", "url(#priceclip)");
+          group.append("path")
+            .attr("id", "dailyline")
+            .attr("fill", "none")
+            .attr("stroke", "#d337ff")
+            .attr("stroke-width", 3.0)
+            .attr("d", rsiLine)
+        },
+        update => {
+          update.select("#dailyline")
+            // .transition().duration(0)    // Do we need these, was glitchy earlier but seems fine now
+            .attr("d", rsiLine)
+        },
+        exit => exit.remove()
+      )
+  }
+
+  updateStochRSIChart(xScale) {
+    const chartHeight = this.stochRsiHeight - this.margin.xbuffer;
+    const xMin = xScale.invert(0 - this.margin.left);
+    const xMax = xScale.invert(this.chartWidth + this.margin.right);
+    const data = this.rsiData.filter(d => d.ts > xMin && d.ts < xMax);
+
+    const yMin = Math.min(d3.min(data, d => d.d), d3.min(data, d => d.k)) - 5;
+    const yMax = Math.max(d3.max(data, d => d.d), d3.max(data, d => d.k)) + 5;
+
+
+    const yScale = d3
+      .scaleLinear()
+      .domain([Math.max(yMin, 0), yMax])
+      .range([chartHeight, 0]);
+    
+    this.stochRsiChart.select("#xAxis")
+      .call(d3.axisBottom(xScale)
+      .tickSize(-chartHeight)
+      .tickPadding(5)
+      .ticks(10));
+
+    this.stochRsiChart.select("#yAxis")
+      .call(d3.axisRight(yScale)
+      .tickFormat(this.volFormat)
+      .tickSize(-this.chartWidth)
+      .ticks(10));
+
+    const rsiLine = d3.line()
+      .x(d => xScale(d.ts))
       .y(d => yScale(d.d));
 
     const stochRsiLine = d3.line()
       .x(d => xScale(d.ts))
       .y(d => yScale(d.k));
 
-    this.rsiChart
+    this.stochRsiChart
       .selectAll(".priceLines")
       .data([data])
       .join(
@@ -615,13 +700,20 @@ class PriceVolumeChart extends Component {
     const rsiArea = svg
       .append("g")
       .attr("width", this.props.width)
-      .attr("height", this.volumeHeight)
+      .attr("height", this.rsiHeight)
       .attr("transform", `translate(0, ${this.candleHeight + this.priceHeight + this.volumeHeight})`)
+
+    const stochRsiArea = svg
+      .append("g")
+      .attr("width", this.props.width)
+      .attr("height", this.stochRsiHeight)
+      .attr("transform", `translate(0, ${this.candleHeight + this.priceHeight + this.volumeHeight + this.rsiHeight})`)
 
     this.buildCandlestickChart(candlestickArea, this.xScale);
     this.buildPriceChart(priceArea, this.xScale);
     this.buildVolumeChart(volumeArea, this.xScale);
     this.buildRSIChart(rsiArea, this.xScale);
+    this.buildStochRSIChart(stochRsiArea, this.xScale);
 
     const crosshair = svg
       .append("line")
@@ -734,7 +826,7 @@ class PriceVolumeChart extends Component {
       rsi[i].k = stoch[i - startIndex].k;
       rsi[i].d = stoch[i - startIndex].d;
     }
-    
+
     return rsi;
   }
 
@@ -782,6 +874,7 @@ class PriceVolumeChart extends Component {
     this.updateCandlestickChart(newXScale);
     this.updatePriceChart(newXScale);
     this.updateVolumeChart(newXScale);
+    this.updateStochRSIChart(newXScale);
     this.updateRSIChart(newXScale);
     this.setState({currentScale: newXScale})
   }
