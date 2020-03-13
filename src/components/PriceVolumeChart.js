@@ -17,8 +17,10 @@ class PriceVolumeChart extends Component {
       .domain(d3.extent(this.props.data, d => d.ts))
       .range([0, this.chartWidth]);
             
-    let d0 = new Date(2019, 1, 1);
-    let d1 = new Date(2020, 1, 1);
+    // Set inital date range to last year worth of data
+    let d1 = d3.max(this.props.data, d => d.ts);
+    let d0 = new Date(d1);
+    d0.setFullYear(d1.getFullYear() - 1);
 
     this.transform = d3.zoomIdentity
       .scale(this.chartWidth / (this.xScale(d1) - this.xScale(d0)))
@@ -627,6 +629,14 @@ class PriceVolumeChart extends Component {
       .x(d => xScale(d.ts))
       .y(d => yScale(d.k));
 
+    const upperBoundLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(80));
+
+    const lowerBoundLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(20));
+
     this.stochRsiChart
       .selectAll(".priceLines")
       .data([data])
@@ -647,6 +657,22 @@ class PriceVolumeChart extends Component {
             .attr("stroke", "#d66061")
             .attr("stroke-width", 2.0)
             .attr("d", stochRsiLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-dasharray", 4)
+            .style("opacity", 0.5)
+            .attr("d", upperBoundLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-dasharray", 4)
+            .style("opacity", 0.5)
+            .attr("d", lowerBoundLine)
         },
         update => {
           update.select("#dailyline")
