@@ -551,7 +551,7 @@ class PriceVolumeChart extends Component {
 
     const yScale = d3
       .scaleLinear()
-      .domain([Math.max(yMin, 0), yMax])
+      .domain([0, 100])
       .range([chartHeight, 0]);
     
     this.rsiChart.select("#xAxis")
@@ -629,7 +629,7 @@ class PriceVolumeChart extends Component {
 
     const yScale = d3
       .scaleLinear()
-      .domain([Math.max(yMin, 0), yMax])
+      .domain([0, 100])
       .range([chartHeight, 0]);
     
     this.stochRsiChart.select("#xAxis")

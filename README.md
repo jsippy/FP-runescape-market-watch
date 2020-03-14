@@ -2,6 +2,8 @@
 
 An interactive dashboard for visualizing Oldschool RuneScape market data.
 
+[https://sippy.dev:3000](https://sippy.dev:3000)
+
 ## Populating PostgreSQL Database and Serving API Endpoints (requires conda)
     createdb DATABASE_NAME
     psql -f database/schema.sql -d DATABASE_NAME
@@ -20,6 +22,5 @@ An interactive dashboard for visualizing Oldschool RuneScape market data.
 - [x] No NaN, undefined, or weird units in legends
 - [x] Compute rolling average in PriceDataChart
 - [x] RSI / STOCH RSI chart
-- [ ] Re-implement % change or include Hi alch, store price
-- [ ] Homepage view
+- [X] Re-implement % change or include Hi alch, store price
 - [x] Resolve price history for all ge tradable items
