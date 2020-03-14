@@ -570,6 +570,14 @@ class PriceVolumeChart extends Component {
       .x(d => xScale(d.ts))
       .y(d => yScale(d.value));
 
+    const upperBoundLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(70));
+
+    const lowerBoundLine = d3.line()
+      .x(d => xScale(d.ts))
+      .y(d => yScale(30));
+
     this.rsiChart
       .selectAll(".priceLines")
       .data([data])
@@ -584,10 +592,25 @@ class PriceVolumeChart extends Component {
             .attr("stroke", "#c677dc")
             .attr("stroke-width", 2.0)
             .attr("d", rsiLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-dasharray", 4)
+            .style("opacity", 0.5)
+            .attr("d", upperBoundLine)
+          group.append("path")
+            .attr("id", "averageline")
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-dasharray", 4)
+            .style("opacity", 0.5)
+            .attr("d", lowerBoundLine)
         },
         update => {
           update.select("#dailyline")
-            // .transition().duration(0)    // Do we need these, was glitchy earlier but seems fine now
             .attr("d", rsiLine)
         },
         exit => exit.remove()
