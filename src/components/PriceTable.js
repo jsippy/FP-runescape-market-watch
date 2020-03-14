@@ -40,11 +40,12 @@ class PriceTable extends Component {
     const TABLE_HEIGHT = this.props.height - 56 - 56 - 40 - 40;
     const TABLE_ROW_HEIGHT = 40;
 
+
     return (
       <div className="Sidebar">
         <ThemeProvider theme={this.theme}>
           <div className="Header">
-            <img src={'./coins.png'} className="HeaderImage"/>
+            <img src={'./coins.png'} className="HeaderImage" alt=""/>
             <div className="Logo">OSRS Watch</div>
           </div>
         <div className="SearchBarContainer">
@@ -89,6 +90,13 @@ class PriceTable extends Component {
 
 function Table({ data, metadata, onSelect, selected, formatGp, pgSize, expanded }) {
 
+  
+  const sorter = (row1, row2, id, desc) => {
+    console.log(row1);
+    console.log(row2);
+    
+  }
+
   let formatPercentChange = (val) => {
     let color;
     if (val < 0) {
@@ -121,26 +129,28 @@ function Table({ data, metadata, onSelect, selected, formatGp, pgSize, expanded 
     {
       Header: "Price",
       accessor: "daily",
-      Cell: row => {
-        let color = row.row.original.oneDayChange > 0 ? GREEN : RED;
-        let symbol = row.row.original.oneDayChange > 0 ? faCaretUp : faCaretDown;
-        let fontSize = 16;
-        if (row.row.original.oneDayChange === 0) {
-          color = "steelblue";
-          fontSize = 12;
-          symbol = null;
-        }
-        return (
-          <span>
-            {`${formatGp(row.row.original.daily)} `}
-            {
-              symbol ? 
-                <FontAwesomeIcon icon={symbol} style={{"color" : color, "fontSize" : fontSize}}/> :
-                null
-            }
+      sortType: (row1, row2, y, z) => (row1.original.daily > row2.original.daily) ? 1 : -1,
+      Cell: ({cell: {value}}) => formatGp(value)
+      // Cell: row => {
+      //   let color = row.row.original.oneDayChange > 0 ? GREEN : RED;
+      //   let symbol = row.row.original.oneDayChange > 0 ? faCaretUp : faCaretDown;
+      //   let fontSize = 16;
+      //   if (row.row.original.oneDayChange === 0) {
+      //     color = "steelblue";
+      //     fontSize = 12;
+      //     symbol = null;
+      //   }
+      //   return (
+      //     <span>
+      //       {`${formatGp(row.row.original.daily)} `}
+      //       {
+      //         symbol ? 
+      //           <FontAwesomeIcon icon={symbol} style={{"color" : color, "fontSize" : fontSize}}/> :
+      //           null
+      //       }
            
-          </span>);
-      }
+      //     </span>);
+      // }
     },
     {
       Header: "Volume",
@@ -163,6 +173,7 @@ function Table({ data, metadata, onSelect, selected, formatGp, pgSize, expanded 
     {
       Header: "High Alch. Profit",
       accessor: "high_alch_profit",
+      sortType: (row1, row2, y, z) => (row1.original.high_alch_profit > row2.original.high_alch_profit) ? 1 : -1,
       Cell: ({cell: {value}}) => formatGp(value)
     },
   ]
