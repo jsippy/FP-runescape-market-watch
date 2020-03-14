@@ -111,6 +111,7 @@ function Table({ data, metadata, onSelect, selected, formatGp, pgSize, expanded 
               height={24}
               style={{ marginBottom: "-8px" }}
               src={`data:image/png;base64,${row.row.original.icon}`}
+              alt=""
             />
             {row.row.original.name}
           </div>
@@ -150,20 +151,20 @@ function Table({ data, metadata, onSelect, selected, formatGp, pgSize, expanded 
 
   let expandedColumns = [
     {
-        Header: "Change (1d)",
-        accessor: "oneDayChange",
-        Cell: row => formatPercentChange(row.row.original.oneDayChange)
-      },
-      {
-        Header: "Change (7d)",
-        accessor: "oneWeekChange",
-        Cell: row => formatPercentChange(row.row.original.oneWeekChange)
-      },
-      {
-        Header: "Change (1m)",
-        accessor: "oneMonthChange",
-        Cell: row => formatPercentChange(row.row.original.oneMonthChange)
-      }
+      Header: "Buy Limit",
+      accessor: "buy_limit",
+      Cell: ({cell: {value}}) => formatGp(value)
+    },
+    {
+      Header: "High Alch. Value",
+      accessor: "high_alch",
+      Cell: ({cell: {value}}) => formatGp(value)
+    },
+    {
+      Header: "High Alch. Profit",
+      accessor: "high_alch_profit",
+      Cell: ({cell: {value}}) => formatGp(value)
+    },
   ]
 
   const columns = React.useMemo(

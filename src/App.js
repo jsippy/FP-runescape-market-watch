@@ -53,6 +53,8 @@ class App extends Component {
     let sidebarItems = [];
     let itemMap = {};
 
+    let nat = metadata.find(d => d.item_id == 561)
+
     for (let i in metadata) {
       let item = metadata[i];
       sidebarItems.push({
@@ -63,6 +65,8 @@ class App extends Component {
         id: item.item_id,
         icon: item.icon,
         buy_limit: item.buy_limit,
+        high_alch: item.high_alch,
+        high_alch_profit: item.high_alch - item.price - nat.price,
         oneDayChange: 0.5,
         oneWeekChange: 0.5,
         oneMonthChange: 0.5

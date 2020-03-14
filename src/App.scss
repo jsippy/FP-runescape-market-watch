@@ -42,6 +42,10 @@ $hover: #474444;
   min-width: 60px;
 }
 
+svg {
+  pointer-events: none;
+}
+
 td {
   padding: 8px !important;
   text-overflow: ellipsis;

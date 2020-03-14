@@ -793,6 +793,8 @@ class PriceVolumeChart extends Component {
     const bisectDate = d3.bisector(d => d.ts).left;
     const { data } = this.props;
     function generateCrosshair() {
+      console.log('generateCrosshair');
+      
       const { currentScale } = that.state;
       const mouseX = d3.mouse(this)[0];
       
@@ -815,7 +817,6 @@ class PriceVolumeChart extends Component {
         .attr("x2", 0)
         .attr("y1", margin.top)
         .attr("y2", height - margin.bottom)
-        .attr("display", null)
         .attr("transform", `translate(${x}, 0)`)
     }
 
@@ -827,12 +828,19 @@ class PriceVolumeChart extends Component {
       .on("mousemove", generateCrosshair)
       .on("mousedown", () => console.log("fuck"))
       .on("mouseup", () => console.log("fuck up"))
-      .on("mouseover", () => crosshair.style("display", null))
+      .on("mouseover", () => {
+        console.log('mouseover');
+        crosshair.style("display", null)
+        d3.selectAll(".tooltip").style("display", null)
+      })
       .on("mouseout",  () => {
+        console.log('mouseout');
         this.setState({currentDate : data[data.length - 1].ts})
         crosshair.style("display", "none")
+        d3.selectAll(".tooltip").style("display", "none")
       })
 
+    let zoomCrosshair = generateCrosshair.bind(svg.node())
     const domain = this.xScale.domain()
     const maxScale = (domain[1].getTime() - domain[0].getTime()) / (1000 * 60 * 60 * 24 * 31 * 2)
     const zoom = d3.zoom()
@@ -841,10 +849,13 @@ class PriceVolumeChart extends Component {
       .translateExtent([[this.margin.left, -Infinity], [this.props.width - this.margin.right, Infinity]])
       .on("start", () => {
         crosshair.style("display", "none")
+        d3.selectAll(".tooltip").style("display", "none")
       })
       .on("zoom", this.zoomed)
       .on("end", () => {
+        zoomCrosshair()
         crosshair.style("display", null)
+        d3.selectAll(".tooltip").style("display", null)
       })
 
     div
