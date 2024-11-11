@@ -1,26 +1,25 @@
 {
   "name": "osrs-market-watch",
-  "homepage": "http://UW-CSE442-WI20.github.io/FP-runescape-market-watch/",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "proxy": "http://localhost:5000",
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "^1.2.27",
-    "@fortawesome/free-solid-svg-icons": "^5.12.1",
-    "@fortawesome/react-fontawesome": "^0.1.8",
-    "@material-ui/core": "^4.9.5",
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.3.2",
-    "@testing-library/user-event": "^7.1.2",
-    "d3": "^5.15.0",
-    "node-sass": "^4.13.1",
-    "papaparse": "^5.1.1",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0",
-    "react-scripts": "3.3.1",
-    "react-table": "^7.0.0-rc.16",
-    "styled-components": "^5.0.1",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@fortawesome/fontawesome-svg-core": "^6.6.0",
+    "@fortawesome/free-solid-svg-icons": "^6.6.0",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@mui/material": "^6.1.6",
+    "@mui/system": "^6.1.6",
+    "@tanstack/react-table": "^8.20.5",
+    "d3": "^5",
+    "react": "^18.3.1",
+    "react-scripts": "^5.0.1",
+    "sass": "^1.80.6",
     "technicalindicators": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -29,9 +28,6 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build -e ./docs -b master"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
   },
   "browserslist": {
     "production": [
@@ -44,8 +40,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "gh-pages": "^2.2.0"
   }
 }

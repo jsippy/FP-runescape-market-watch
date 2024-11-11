@@ -2,19 +2,10 @@
 @import url('https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap');
 
 $bg: #303030;
-$text: #222;
+$text: #eee;
 $primary: #212121;
 $hover: #474444;
 
-// #xAxis line {
-//   stroke-opacity: 0.3;
-//   shape-rendering: crispEdges;
-// }
-
-// #yAxis line {
-//   stroke-opacity: 0.3;
-//   shape-rendering: crispEdges;
-// }
 .domain {
   stroke-opacity: 0.3;
 }
@@ -22,10 +13,6 @@ $hover: #474444;
 .tick {
   stroke-opacity: 0.3;
   shape-rendering: crispEdges;
-}
-
-.candlestick {
-
 }
 
 .tooltip {
@@ -53,6 +40,7 @@ td {
 }
 
 html {
+  color: $text;
   background: $bg;
   overflow: hidden;
 }
@@ -177,7 +165,7 @@ html {
       flex-basis: 0px;
       flex-grow: 1;
       max-height: 100%;
-      margin: 50px;
+      // margin: 50px;
       position: relative;
 
       .ChartTitle {
@@ -241,6 +229,7 @@ html {
           .ItemName {
             font-size: 14px;
             margin-top: 4px;
+            color: white;
           }
         }
       }

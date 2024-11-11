@@ -1,4 +1,4 @@
 PGHOST=127.0.0.1:5432
-PGDATABASE=market_watch
-PGUSER=osrs
-PGPASSWORD=runescape
+PGDATABASE=postgres
+PGUSER=postgres
+PGPASSWORD=postgres

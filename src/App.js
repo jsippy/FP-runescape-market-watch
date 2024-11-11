@@ -1,179 +1,139 @@
-import React, { Component } from "react";
+import React, { Component, StrictMode, useEffect, useRef, useState } from "react";
 import "./App.scss";
 
-import * as d3 from "d3";
 import PriceVolumeChart from './components/PriceVolumeChart.js';
-import PriceTable from './components/PriceTable.js';
+import ItemSidebar from './components/ItemSidebar.js';
+import { createTheme, ThemeProvider } from "@mui/system";
 
-const TITLE_HEIGHT = 0;
+// const TITLE_HEIGHT = 0;
 const SIDEBAR_WIDTH = 400;
-const ITEM_HEADER_HEIGHT = 0;
+// const ITEM_HEADER_HEIGHT = 0;
 
-class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      loading: true,
-      items: null,
-      activeItemId: null,
-      expanded: false,
-      priceData: null,
-      candleData: null,
-      sidebarItems: [],
-      filteredItems: [],
-    };
-    this.chart = React.createRef();
-    this.onResize = this.onResize.bind(this);
-    this.toggleExpand = this.toggleExpand.bind(this);
-    this.filterSidebar = this.filterSidebar.bind(this);
-    this.onSidebarSelect = this.onSidebarSelect.bind(this);
-    this.processMetadata = this.processMetadata.bind(this);
-  }
+const PRIMARY = "#212121";
+const GREEN = "#60d68a";
+const BG = "#303030";
 
-  componentDidMount() {
-    window.addEventListener('resize', this.onResize, false);
+function LoadingAnimation() {
+  return (
+    <div className="LoadingContainer">
+      <div className="lds-roller" style={{"color": "black"}}>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+  )
+}
+
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+}
+
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [sidebarItems, setSidebarItems] = useState([]);
+  const [priceData, setPriceData] = useState([]);
+  const [activeItemId, setActiveItemId] = useState(561); // maybe fix
+  const [expanded, setExpanded] = useState(false);
+
+  const windowSize = useWindowSize();
+  console.log(windowSize);
+
+  // Add a hook to fetch the item metadata.
+  useEffect(() => {
     fetch('/market_watch_api/metadata', {})
       .then(response => response.json())
-      .then(data => this.processMetadata(data));
-    this.onResize();
-  }
-
-  toggleExpand() {
-    this.setState((prev) => ({expanded: !prev.expanded}))
-  }
-
-  onResize() {
-    this.setState(
-      { chartWidth: window.innerWidth - SIDEBAR_WIDTH,
-        chartHeight: window.innerHeight - ITEM_HEADER_HEIGHT - TITLE_HEIGHT});
-  }
-
-  processMetadata(metadata) {
-    let percentChange = (start, end) => Math.round(1000 * (start - end) / start) / 10;
-    let sidebarItems = [];
-    let itemMap = {};
-
-    let nat = metadata.find(d => d.item_id == 561)
-
-    for (let i in metadata) {
-      let item = metadata[i];
-      sidebarItems.push({
-        name: item.name,
-        average: item.price, // we could compute sma here instead?
-        daily: item.price,
-        volume: item.volume,
-        id: item.item_id,
-        icon: item.icon,
-        buy_limit: item.buy_limit,
-        high_alch: item.high_alch,
-        high_alch_profit: item.high_alch - item.price - nat.price,
-        oneDayChange: 0.5,
-        oneWeekChange: 0.5,
-        oneMonthChange: 0.5
-      });
-
-    }
-
-    // sort alphabetically on name
-    sidebarItems.sort((a,b) => (a.name > b.name) ? 1 : -1);
-
-    fetch(`/market_watch_api/prices?id=${sidebarItems[0].id}`, {})
-      .then(response => response.json())
-      .then(data => { 
-
-        this.setState({
-          loading: false,
-          items: itemMap,
-          sidebarItems: sidebarItems,
-          filteredItems: sidebarItems,
-          activeItemId: sidebarItems[0].id,
-          priceData: data,
-          candleData: null
-        });
+      .then(metadata => {
+        let nat = metadata.find(item => item.item_id == 561)
+        let sidebarItems = [];
+        for (let key in metadata) {
+          const item = metadata[key]
+          sidebarItems.push({
+            name: item.name,
+            average: item.price, // we could compute sma here instead?   
+            daily: item.price,
+            volume: item.volume,
+            id: item.item_id,
+            icon: item.icon,
+            buy_limit: item.buy_limit,  
+            high_alch: item.high_alch,
+            high_alch_profit: item.high_alch - item.price - nat.price,
+            oneDayChange: 0.5,
+            oneWeekChange: 0.5,
+            oneMonthChange: 0.5
+          });
+        }
+        setSidebarItems(sidebarItems);
+        setLoading(false);
       })
-  }
+      .catch(error => console.log(error));
+  }, []);
 
-  onSidebarSelect(id) {
-    fetch(`/market_watch_api/prices?id=${id}`, {})
+  // Add a hook to fetch the selected item's price history.
+  useEffect(() => {
+    fetch('/market_watch_api/prices?id=' + activeItemId, {})
       .then(response => response.json())
-      .then(data => {
-        this.setState({activeItemId: id, priceData: data })
-      })
-  }
-  
-  filterSidebar(e) {
-    const text = e.target.value.toLowerCase();
-    const newItems = this.state.sidebarItems.filter(
-      item => item.name.toLowerCase().includes(text)
-    );
-    this.setState({
-      filteredItems: newItems
-    });
-  }
+      .then(data => data.map((row) => ({
+        'ts': new Date(row['ts']),
+        'daily': +row['price'],
+        'average': +row['price'],
+        'volume': +row['volume']
+      })))
+      .then(setPriceData)
+      .catch(error => console.log(error))
+  }, [activeItemId]);
 
-  renderLoadingAnimation() {
+  // If we haven't loaded the item metadata yet, show the loading animation
+  if (loading) {
     return (
-        <div className="LoadingContainer">
-            <div className="lds-roller" style={{"color": "black"}}>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-        </div>
-    );
-}
+      <StrictMode>
+        <LoadingAnimation />
+      </StrictMode>
+    )
+  }
 
-  render() {
-    if (this.state.loading) {
-      return this.renderLoadingAnimation()
-    }
-
-    const { activeItemId, chartWidth, chartHeight } = this.state;
-    const metadata = this.state.sidebarItems.find((e => e.id === activeItemId));
-    const pricehistory = this.state.priceData;
-
-    const chartData = pricehistory.map((row) => ({
-      'ts': new Date(row['ts']),
-      'daily': +row['price'],
-      'average': +row['price'],         // again, we could compute sma here...
-      'volume': +row['volume']
-    }))
-
-    const gpFormat = gp => `${d3.format('.3~s')(gp)} gp`;
-    const volFormat = d3.format('.3~s');
-    const { expanded } = this.state;
-
-    return (
+  // Otherwise render the app
+  return (
+    <StrictMode>
       <div className="Wrapper">
         <div className={expanded ? "Container Expanded" : "Container"}>
-          <PriceTable
-            items={this.state.filteredItems}
-            metadata={this.state.sidebarItems}
-            filterSidebar={this.filterSidebar}
-            activeItemId={this.state.activeItemId}
-            onSelect={this.onSidebarSelect}
-            expanded={this.state.expanded}
-            toggleExpand={this.toggleExpand}
-            formatGp={volFormat}
-            height={chartHeight}/>
-          <div className={expanded ? "Content Expanded" : "Content"}>
-            <div className="ChartContainer" ref={this.chart} style={{margin: 0, position: "relative"}}>
-              <PriceVolumeChart metadata={metadata}
-                                data={chartData}
-                                width={chartWidth}
-                                height={chartHeight} />
-            </div>
-            
-          </div>
-        </div>
+          <ItemSidebar
+            data={sidebarItems}
+            activeItemId={activeItemId}
+            setActiveItemId={setActiveItemId}
+            expanded={expanded}
+            setExpanded={setExpanded}
+            height={windowSize.height} />
+          <PriceVolumeChart 
+            metadata={sidebarItems.find(item => item.id == activeItemId)}
+            data={priceData}
+            width={windowSize.width - SIDEBAR_WIDTH}
+            height={windowSize.height} 
+            expanded={expanded}/>
+        </div> 
       </div>
-    );
-  }
-}
-
-export default App;
+    </StrictMode>
+  )
+};

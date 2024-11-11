@@ -19,6 +19,7 @@ class PriceVolumeChart extends Component {
             
     // Set inital date range to last year worth of data
     let d1 = d3.max(this.props.data, d => d.ts);
+    d1 = new Date(d1);
     let d0 = new Date(d1);
     d0.setFullYear(d1.getFullYear() - 1);
 
@@ -33,13 +34,6 @@ class PriceVolumeChart extends Component {
     this.candleData = this.generateCandlestickData(this.props.data, this.period);
     this.rsiData = this.generateRSI(this.props.data, 14);
     this.smaData = this.generateSimpleMovingAverage(this.props.data, 14);
-
-    // Chart ratios 
-    this.candleHeight = 0.35 * this.props.height;
-    this.priceHeight = 0.25 * this.props.height;
-    this.volumeHeight = 0.1333 * this.props.height;
-    this.rsiHeight = 0.1333 * this.props.height;
-    this.stochRsiHeight = 0.1333 * this.props.height;
     
     // Chart colors
     this.green = "#60d68a";
@@ -87,14 +81,21 @@ class PriceVolumeChart extends Component {
   }
 
   render() {
-    return <><div ref={this.node} />
-      {this.renderRSILegend()}
-      {this.renderStochRSILegend()}
-      {this.renderCandleLegend()}
-      {this.renderPriceLegend()}
-      {this.renderVolumeLegend()}
-      {this.renderTooltip()}
-    </>;
+    return (
+      <>
+      <div className={this.props.expanded ? "Content Expanded" : "Content"}>
+        <div className="ChartContainer">
+          <div ref={this.node} />
+          {this.renderRSILegend()}
+          {this.renderStochRSILegend()}
+          {this.renderCandleLegend()}
+          {this.renderPriceLegend()}
+          {this.renderVolumeLegend()}
+          {this.renderTooltip()}
+        </div>
+      </div>
+      </>
+    );
   }
 
   renderChartTitle() {
@@ -127,19 +128,19 @@ class PriceVolumeChart extends Component {
     } else {
       return <div className="Legend" style={{"display" : "none"}}></div>
     }
-
+    const formatTime = d3.utcFormat("%B %d, %Y");
     return (
-      <div className="Legend" style={{"top" : this.margin.top}}>
+      (<div className="Legend" style={{"top" : this.margin.top}}>
         <div className="LegendHeader">
           <img className="LegendIcon" src={`data:image/png;base64,${metadata.icon}`} alt={metadata.name}/>
           <div className="ItemName">{metadata.name.replace(/_/g, ' ')}</div>
         </div>
-        {/* <div className="Label">{`Date: ${currentDate}`}</div> */}
+        <div className="Label">{`Date: ${formatTime(currentDate)}`}</div>
         <div className="Label">{`Open: `}<span className="Value">{this.gpFormat(open)}</span></div>
         <div className="Label">{`Close: `}<span className="Value">{this.gpFormat(close)}</span></div>
         <div className="Label">{`High: `}<span className="Value">{this.gpFormat(hi)}</span></div>
         <div className="Label">{`Low: `}<span className="Value">{this.gpFormat(low)}</span></div>
-      </div>
+      </div>)
     );
   }
 
@@ -284,8 +285,6 @@ class PriceVolumeChart extends Component {
       .append("g")
       .attr("id", "yAxis")
       .attr("transform", `translate(${this.chartWidth}, 0)`)
-
-
 
     this.updateCandlestickChart(xScale);
   }
@@ -756,6 +755,14 @@ class PriceVolumeChart extends Component {
   }
   
   drawChart(height) {
+
+    // Chart ratios 
+    this.candleHeight = 0.35 * height;
+    this.priceHeight = 0.25 * height;
+    this.volumeHeight = 0.1333 * height;
+    this.rsiHeight = 0.1333 * height;
+    this.stochRsiHeight = 0.1333 * height;
+
     const div = d3.select(this.node.current);
     div.selectAll("*").remove();
     const { chartWidth, margin } = this;
@@ -816,7 +823,6 @@ class PriceVolumeChart extends Component {
     const bisectDate = d3.bisector(d => d.ts).left;
     const { data } = this.props;
     function generateCrosshair() {
-      console.log('generateCrosshair');
       
       const { currentScale } = that.state;
       const mouseX = d3.mouse(this)[0];
@@ -843,21 +849,13 @@ class PriceVolumeChart extends Component {
         .attr("transform", `translate(${x}, 0)`)
     }
 
-    crosshair
-      .on("mousedown", () => console.log("fuck"))
-      .on("mouseup", () => console.log("fuck up"))
-
     div
       .on("mousemove", generateCrosshair)
-      .on("mousedown", () => console.log("fuck"))
-      .on("mouseup", () => console.log("fuck up"))
       .on("mouseover", () => {
-        console.log('mouseover');
         crosshair.style("display", null)
         d3.selectAll(".tooltip").style("display", null)
       })
       .on("mouseout",  () => {
-        console.log('mouseout');
         this.setState({currentDate : data[data.length - 1].ts})
         crosshair.style("display", "none")
         d3.selectAll(".tooltip").style("display", "none")
@@ -973,8 +971,6 @@ class PriceVolumeChart extends Component {
   }
 
   zoomed() {
-    console.log(d3.event.type);
-    
     const transform = d3.event.transform;
     const newXScale = transform.rescaleX(this.xScale);
     this.updateCandlestickChart(newXScale);

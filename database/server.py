@@ -7,12 +7,24 @@ from psycopg2.extras import RealDictCursor
 CERT_PATH = 'fullchain.pem'
 PRIV_PATH = 'privkey.pem'
 
-API_BASE = '/market_watch_api/'
-PG_USER = 'osrs'
-PG_PASS = 'runescape'
+API_BASE  = '/market_watch_api/'
+
+# POSTGRES VARIABLES
+HOST        = "127.0.0.1"
+PG_DATABASE = 'postgres'
+PG_USER     = 'postgres'
+PG_PASS     = 'postgres'
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
+
+conn = psycopg2.connect(
+    host=HOST,
+    database=PG_DATABASE,
+    user=PG_USER,
+    password=PG_PASS,
+)
+conn.autocommit = True
 
 @app.route(API_BASE, methods=['GET'])
 def home():
@@ -21,42 +33,27 @@ def home():
 
 @app.route(API_BASE + 'metadata', methods=['GET'])
 def api_metadata():
-    conn = psycopg2.connect(
-      host="localhost",
-      database="market_watch",
-      user=PG_USER,
-      password=PG_PASS,
-    )
-
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    query = '''SELECT  m.*, p.*
-               FROM metadata m 
-               INNER JOIN price_history p
-               ON m.item_id = p.item_id
-               INNER JOIN
-               (
-                   SELECT item_id, MAX(ts) max_ts
-                   FROM price_history
-		   WHERE price IS NOT NULL AND volume IS NOT NULL
-                   GROUP BY item_id
-               ) c ON p.item_id = c.item_id AND p.ts = c.max_ts
-	       '''
-
+    # selects all columns from the metadata table and joins the last price for each item
+    query = """
+    SELECT *
+    FROM metadata
+    INNER JOIN (
+        SELECT item_id, MAX(ts) AS ts
+        FROM price_history
+        GROUP BY item_id
+    ) max_price ON metadata.item_id = max_price.item_id
+    INNER JOIN price_history ON metadata.item_id = price_history.item_id AND max_price.ts = price_history.ts
+    """
     cur.execute(query)
     result = cur.fetchall()
-
-    return jsonify(result)
+    cur.close()
+    json = jsonify(result)
+    return json
 
 
 @app.route(API_BASE + 'prices', methods=['GET'])
 def api_pricedata():
-    conn = psycopg2.connect(
-      host="localhost",
-      database="market_watch",
-      user=PG_USER,
-      password=PG_PASS,
-    )
-
     query_parameters = request.args
     item_id = query_parameters.get('id')
 
@@ -71,19 +68,12 @@ def api_pricedata():
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute('SELECT * FROM price_history WHERE item_id=%d' % item_id)
     result = cur.fetchall()
-
+    cur.close()
     return jsonify(result)
 
 
 @app.route(API_BASE + 'full_price', methods=['GET'])
 def api_fullpricedata():
-    conn = psycopg2.connect(
-      host="localhost",
-      database="market_watch",
-      user=PG_USER,
-      password=PG_PASS,
-    )
-
     query_parameters = request.args
     item_id = query_parameters.get('id')
 
@@ -110,16 +100,16 @@ def api_fullpricedata():
     ORDER BY dates.ts
     '''.format(item_id))
     result = cur.fetchall()
-
+    cur.close()
     return jsonify(result)
 
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return "<h1>404</h1><p>The resource could not be found.</p>", 404
+# @app.errorhandler(404)
+# def page_not_found(e):
+#     return "<h1>404</h1><p>The resource could not be found.</p>", 404
 
 # LOCALHOST
-app.run()
+app.run('0.0.0.0', 5000) #
 
 # SSL OPEN PORT
 # app.run(host='0.0.0.0', ssl_context=(CERT_PATH, PRIV_PATH))
