@@ -1,44 +1,32 @@
 import json
-from tqdm import tqdm
+import time
 import psycopg2
 from datetime import datetime
-from bs4 import BeautifulSoup
 from urllib.request import Request, urlopen
-from multiprocessing import Pool
 
-USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 ' \
-             '(KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'
-HEADERS = {'User-Agent': USER_AGENT }
+# Setup request headers
+HEADERS = {
+    'User-Agent': 'Dashboard project: https://github.com/jsippy/FP-runescape-market-watch/'
+}
 
-# SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-summary.json'
+# API URLs
 SUMMARY_URL = "https://raw.githubusercontent.com/0xNeffarion/osrsreboxed-db/master/docs/items-complete.json"
-
-# PRICES_URL = 'https://oldschool.runescape.wiki/w/Module:Exchange/{}/Data'
-PRICES_URL = "https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id={}"
-
-WIKI_URL = 'https://oldschool.runescape.wiki/w/'
-POOL_SIZE = 1
+PRICES_URL  = "https://prices.runescape.wiki/api/v1/osrs/timeseries?timestep=24h&id={}"
+WIKI_URL    = 'https://oldschool.runescape.wiki/w/'
 
 # Postgres variables
+PG_HOST     = "database"
 PG_DATABASE = "postgres"
 PG_USER     = 'postgres'
 PG_PASS     = 'postgres'
 
+# DEPRECATED URLS
+# SUMMARY_URL = 'https://www.osrsbox.com/osrsbox-db/items-summary.json'
+# PRICES_URL = 'https://oldschool.runescape.wiki/w/Module:Exchange/{}/Data'
 
-# Dictionary of ids to corrected version of name
-ITEM_NAME_CORRECTIONS = {
-    4529: 'Candle lantern (white)',
-    4532: 'Candle lantern (black)',
-    6215: 'Broodoo_shield_(10)_(green)',
-    6235: 'Broodoo_shield_(green)',
-    6237: 'Broodoo_shield_(10)_(orange)',
-    6257: 'Broodoo_shield_(orange)',
-    6259: 'Broodoo_shield_(10)_(blue)',
-    6279: 'Broodoo_shield_(blue)',
-}
 
-# Create tables
 def createTables(conn):
+    print('Creating tables if they dont exist...')
     cur = conn.cursor()
     create_metadata_sql = """
     CREATE TABLE IF NOT EXISTS metadata (
@@ -70,30 +58,6 @@ def createTables(conn):
     cur.execute(create_price_history_sql)
     cur.close()
 
-def updateItemPriceData(conn):
-    cur = conn.cursor()
-    cur.execute("SELECT item_id FROM metadata")
-    ids = cur.fetchall()
-    print('Fetching price history...')
-    for row in tqdm(ids, total=len(ids)):
-        id = row[0]
-        try:
-            request = Request(PRICES_URL.format(id), headers=HEADERS)
-            response = urlopen(request)
-            prices = json.loads(response.read())
-            response.close()
-        except:
-            assert False, 'Failed to recieve price JSON file'
-
-        rows = []
-        for price in prices['data']:
-            rows.append((id, datetime.fromtimestamp(price['timestamp']), price['avgLowPrice'], price['lowPriceVolume']))
-        b_rows = [cur.mogrify("(%s,%s,%s,%s)", row) for row in rows]
-        args_str = b",".join(b_rows)
-        cur.execute(b"INSERT INTO price_history VALUES " +
-                args_str + b" ON CONFLICT (item_id, ts) DO NOTHING") 
-    cur.close()
-
 
 def updateItemMetadata(conn):
     """
@@ -114,8 +78,7 @@ def updateItemMetadata(conn):
 
     cur = conn.cursor()
 
-    # for summary in tqdm(blob.values(), total=len(blob.values())):
-    for item in tqdm(blob.values(), total=len(blob.values())):
+    for item in blob.values():
         if metadata_exists(cur, item['id']) or not item['tradeable_on_ge']:
             continue
 
@@ -158,6 +121,36 @@ def updateItemMetadata(conn):
                 item['buy_limit']))
     cur.close()
 
+
+def updateItemPriceData(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT item_id FROM metadata")
+    ids = cur.fetchall()
+    print('Fetching price history...')
+    for row in ids:
+        id = row[0]
+        print(f"  Fetching prices for item #{id}")
+        try:
+            request = Request(PRICES_URL.format(id), headers=HEADERS)
+            response = urlopen(request)
+            prices = json.loads(response.read())
+            response.close()
+        except:
+            assert False, 'Failed to recieve price JSON file'
+
+        if len(prices['data']) == 0:
+            continue
+
+        rows = []
+        for price in prices['data']:
+            rows.append((id, datetime.fromtimestamp(price['timestamp']), price['avgLowPrice'], price['lowPriceVolume']))
+        b_rows = [cur.mogrify("(%s,%s,%s,%s)", row) for row in rows]
+        args_str = b",".join(b_rows)
+        cur.execute(b"INSERT INTO price_history VALUES " +
+                args_str + b" ON CONFLICT (item_id, ts) DO NOTHING") 
+    cur.close()
+
+
 def metadata_exists(cursor, item_id):  
     """
     Returns True if the metadata exists for the given item_id in the database
@@ -172,19 +165,30 @@ def metadata_exists(cursor, item_id):
     result = cursor.fetchone()
     return result != None
 
+
 def main():
-    conn = psycopg2.connect(
-      host="127.0.0.1",
-      database=PG_DATABASE,
-      user=PG_USER,
-      password=PG_PASS,
-    )
-    conn.autocommit = True
+    print('Loading database with initial data...')
+    conn = None
+    while not conn:
+        try: 
+            conn = psycopg2.connect(
+              host=PG_HOST,
+              database=PG_DATABASE,
+              user=PG_USER,
+              password=PG_PASS,
+            )
+            conn.autocommit = True
+        except:
+            print('Failed to connect to database.')
+            time.sleep(5)
+            conn = None
 
     createTables(conn)
-    # updateItemMetadata(conn)
+    updateItemMetadata(conn)
     updateItemPriceData(conn)
+    print('Database has been loaded with initial data')
     conn.close()
+
 
 if __name__ == '__main__':
     main()

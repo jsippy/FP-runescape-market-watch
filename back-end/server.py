@@ -10,13 +10,13 @@ PRIV_PATH = 'privkey.pem'
 API_BASE  = '/market_watch_api/'
 
 # POSTGRES VARIABLES
-HOST        = "127.0.0.1"
+HOST        = "database"
 PG_DATABASE = 'postgres'
 PG_USER     = 'postgres'
 PG_PASS     = 'postgres'
 
 app = flask.Flask(__name__)
-app.config["DEBUG"] = True
+# app.config["DEBUG"] = True
 
 conn = psycopg2.connect(
     host=HOST,
@@ -25,6 +25,7 @@ conn = psycopg2.connect(
     password=PG_PASS,
 )
 conn.autocommit = True
+
 
 @app.route(API_BASE, methods=['GET'])
 def home():
@@ -56,6 +57,11 @@ def api_metadata():
 def api_pricedata():
     query_parameters = request.args
     item_id = query_parameters.get('id')
+    # Sanitize the input
+    try: 
+        item_id = int(item_id)
+    except:
+        item_id = -1
 
     if not item_id:
         return page_not_found(404)
@@ -104,12 +110,6 @@ def api_fullpricedata():
     return jsonify(result)
 
 
-# @app.errorhandler(404)
-# def page_not_found(e):
-#     return "<h1>404</h1><p>The resource could not be found.</p>", 404
-
 # LOCALHOST
-app.run('0.0.0.0', 5000) #
-
-# SSL OPEN PORT
-# app.run(host='0.0.0.0', ssl_context=(CERT_PATH, PRIV_PATH))
+print('Running flask server on port 5000')
+app.run('0.0.0.0', 5000)

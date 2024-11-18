@@ -2,8 +2,7 @@
 
 An interactive dashboard for visualizing Oldschool RuneScape market data.
 
-Available at: [https://sippy.dev:3000](https://sippy.dev:3000)
-
+Hosted at [osrs-market.sippy.dev](osrs-market.sippy.dev)
 Watch the demo: [https://vimeo.com/397559046](https://vimeo.com/397559046)
 
 ## Populating PostgreSQL Database and Serving API Endpoints (requires conda)
@@ -26,3 +25,5 @@ Watch the demo: [https://vimeo.com/397559046](https://vimeo.com/397559046)
 - [x] RSI / STOCH RSI chart
 - [X] Re-implement % change or include Hi alch, store price
 - [x] Resolve price history for all ge tradable items
+- [ ] Move to production flask API
+- [ ] Allow configuration with environment variables

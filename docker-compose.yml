@@ -2,16 +2,16 @@ services:
   front-end:
     container_name: front-end
     build: 
-      context: ../front-end
+      context: ./front-end
       dockerfile: Dockerfile
     ports:
-      - "8000:80"
+      - "80:80"
     restart: unless-stopped
 
   back-end:
     container_name: back-end
     build:
-      context: ../back-end
+      context: ./back-end
       dockerfile: Dockerfile
     depends_on:
       database:
@@ -22,9 +22,9 @@ services:
     container_name: database
     image: postgres:alpine
     volumes:
-      - ../database/data:/var/lib/postgresql/data
+      - ./database/data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
     restart: unless-stopped
